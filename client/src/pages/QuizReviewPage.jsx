@@ -45,7 +45,10 @@ export default function QuizReviewPage() {
     return (
         <div className="review-page">
             <div className="review-header">
-                <button className="review-back-btn" onClick={() => navigate("/dashboard")}>← Dashboard</button>
+                <button className="review-back-btn" onClick={() => navigate("/dashboard")}>
+                    <span className="material-icons-outlined btn-icon">arrow_back</span>
+                    Dashboard
+                </button>
                 <h1 className="review-title">Quiz Review</h1>
                 <div className="review-score-badge" style={{ background: score >= 70 ? "var(--md-success)" : score >= 40 ? "var(--md-warning)" : "var(--md-error)" }}>
                     {score}%
@@ -57,10 +60,12 @@ export default function QuizReviewPage() {
                     All ({answers.length})
                 </button>
                 <button className={`filter-btn ${filter === "correct" ? "active" : ""}`} onClick={() => setFilter("correct")}>
-                    ✅ Correct ({answers.filter((a) => a.is_correct).length})
+                    <span className="material-icons-outlined filter-icon">check_circle</span>
+                    Correct ({answers.filter((a) => a.is_correct).length})
                 </button>
                 <button className={`filter-btn ${filter === "wrong" ? "active" : ""}`} onClick={() => setFilter("wrong")}>
-                    ❌ Wrong ({answers.filter((a) => !a.is_correct).length})
+                    <span className="material-icons-outlined filter-icon">cancel</span>
+                    Wrong ({answers.filter((a) => !a.is_correct).length})
                 </button>
             </div>
 
@@ -71,7 +76,8 @@ export default function QuizReviewPage() {
                             <span className="review-q-number">Q{answers.indexOf(answer) + 1}</span>
                             <span className="review-module-badge">Module {answer.module}</span>
                             <span className={`review-status ${answer.is_correct ? "correct" : "wrong"}`}>
-                                {answer.is_correct ? "✅ Correct" : "❌ Wrong"}
+                                <span className="material-icons-outlined status-icon">{answer.is_correct ? "check_circle" : "cancel"}</span>
+                                {answer.is_correct ? "Correct" : "Wrong"}
                             </span>
                         </div>
                         <p className="review-question-text">{answer.question}</p>
@@ -83,14 +89,14 @@ export default function QuizReviewPage() {
                                 >
                                     <span className="review-opt-letter">{String.fromCharCode(65 + optIdx)}</span>
                                     <span>{opt}</span>
-                                    {opt === answer.correct_answer && <span className="review-opt-badge correct">✓</span>}
-                                    {opt === answer.selected_answer && opt !== answer.correct_answer && <span className="review-opt-badge wrong">✗</span>}
+                                    {opt === answer.correct_answer && <span className="material-icons-outlined review-opt-badge correct">check</span>}
+                                    {opt === answer.selected_answer && opt !== answer.correct_answer && <span className="material-icons-outlined review-opt-badge wrong">close</span>}
                                 </div>
                             ))}
                         </div>
                         {answer.explanation && (
                             <div className="review-explanation">
-                                <strong>💡 Explanation:</strong> {answer.explanation}
+                                <strong><span className="material-icons-outlined explanation-icon">lightbulb</span> Explanation:</strong> {answer.explanation}
                             </div>
                         )}
                     </div>

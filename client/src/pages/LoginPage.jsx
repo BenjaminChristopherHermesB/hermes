@@ -35,7 +35,7 @@ export default function LoginPage() {
             </div>
             <div className="auth-card slide-up">
                 <div className="auth-logo">
-                    <img src="/logo.svg" alt="Hermes The Quizzer" className="auth-logo-img" />
+                    <img src="/logo.png" alt="Hermes The Quizzer" className="auth-logo-img" />
                 </div>
                 <h1 className="auth-title">Welcome Back</h1>
                 <p className="auth-subtitle">Sign in to continue your journey</p>

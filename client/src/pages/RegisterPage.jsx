@@ -46,7 +46,7 @@ export default function RegisterPage() {
             </div>
             <div className="auth-card slide-up">
                 <div className="auth-logo">
-                    <img src="/logo.svg" alt="Hermes The Quizzer" className="auth-logo-img" />
+                    <img src="/logo.png" alt="Hermes The Quizzer" className="auth-logo-img" />
                 </div>
                 <h1 className="auth-title">Create Account</h1>
                 <p className="auth-subtitle">Join Hermes and start quizzing</p>

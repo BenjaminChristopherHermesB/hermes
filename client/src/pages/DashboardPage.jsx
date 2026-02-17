@@ -55,11 +55,12 @@ export default function DashboardPage() {
         <div className="dashboard">
             <header className="dashboard-header">
                 <div className="header-left">
-                    <h1 className="header-brand">⚡ Hermes</h1>
+                    <img src="/logo.png" alt="Hermes" className="header-logo" />
+                    <h1 className="header-brand">Hermes</h1>
                 </div>
                 <div className="header-right">
                     <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
-                        {theme === "dark" ? "☀️" : "🌙"}
+                        <span className="material-icons-outlined">{theme === "dark" ? "light_mode" : "dark_mode"}</span>
                     </button>
                     {user?.role === "admin" && (
                         <button className="header-btn admin-btn" onClick={() => navigate("/admin")}>
@@ -74,7 +75,7 @@ export default function DashboardPage() {
 
             <main className="dashboard-main">
                 <section className="greeting-section fade-in">
-                    <h2 className="greeting">Hello, {user?.name}!! 👋</h2>
+                    <h2 className="greeting">Hello, {user?.name}!</h2>
                     <p className="greeting-sub">Ready to challenge yourself today?</p>
                 </section>
 
@@ -88,7 +89,7 @@ export default function DashboardPage() {
                     </div>
                 ) : subjects.length === 0 ? (
                     <div className="empty-state fade-in">
-                        <div className="empty-icon">📚</div>
+                        <span className="material-icons-outlined empty-icon">menu_book</span>
                         <h3>No subjects yet</h3>
                         <p>Ask an admin to upload some quiz subjects!</p>
                     </div>
@@ -102,7 +103,7 @@ export default function DashboardPage() {
                                 onClick={() => setQuizSetup(subject)}
                             >
                                 <div className="subject-card-header">
-                                    <div className="subject-icon">📖</div>
+                                    <span className="material-icons-outlined subject-icon">auto_stories</span>
                                     <div className="subject-modules">{subject.module_count} modules</div>
                                 </div>
                                 <h3 className="subject-name">{subject.name}</h3>
@@ -184,7 +185,7 @@ export default function DashboardPage() {
 
                         <div className="modal-actions">
                             <button className="modal-btn cancel" onClick={() => setQuizSetup(null)}>Cancel</button>
-                            <button className="modal-btn start" onClick={startQuiz}>Start Quiz 🚀</button>
+                            <button className="modal-btn start" onClick={startQuiz}>Start Quiz</button>
                         </div>
                     </div>
                 </div>

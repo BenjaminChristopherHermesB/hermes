@@ -92,25 +92,32 @@ export default function QuizPage() {
     const progress = ((currentIndex + (feedback ? 1 : 0)) / sessionData.totalQuestions) * 100;
 
     if (completed) {
+        const scoreVal = results?.score || 0;
+        let resultLabel = "Keep Practicing";
+        let resultIcon = "fitness_center";
+        if (scoreVal >= 70) { resultLabel = "Excellent Work"; resultIcon = "emoji_events"; }
+        else if (scoreVal >= 40) { resultLabel = "Good Effort"; resultIcon = "thumb_up"; }
+
         return (
             <div className="quiz-page">
                 <div className="quiz-results scale-in">
-                    <div className="results-icon">{results?.score >= 70 ? "🎉" : results?.score >= 40 ? "👍" : "💪"}</div>
+                    <span className="material-icons-outlined results-icon">{resultIcon}</span>
                     <h1 className="results-title">Quiz Complete!</h1>
+                    <p className="results-label">{resultLabel}</p>
                     <div className="results-score-ring">
                         <svg viewBox="0 0 120 120">
                             <circle cx="60" cy="60" r="54" fill="none" stroke="var(--md-outline-variant)" strokeWidth="8" />
                             <circle
                                 cx="60" cy="60" r="54" fill="none"
-                                stroke={results?.score >= 70 ? "var(--md-success)" : results?.score >= 40 ? "var(--md-warning)" : "var(--md-error)"}
+                                stroke={scoreVal >= 70 ? "var(--md-success)" : scoreVal >= 40 ? "var(--md-warning)" : "var(--md-error)"}
                                 strokeWidth="8"
-                                strokeDasharray={`${(results?.score || 0) * 3.39} 339.292`}
+                                strokeDasharray={`${scoreVal * 3.39} 339.292`}
                                 strokeLinecap="round"
                                 transform="rotate(-90 60 60)"
                                 className="score-circle"
                             />
                         </svg>
-                        <div className="score-text">{results?.score || 0}%</div>
+                        <div className="score-text">{scoreVal}%</div>
                     </div>
                     <div className="results-stats">
                         <div className="result-stat">
@@ -124,7 +131,8 @@ export default function QuizPage() {
                     </div>
                     <div className="results-actions">
                         <button className="results-btn review" onClick={() => navigate(`/quiz/review/${sessionData.sessionId}`)}>
-                            Review Answers 📝
+                            <span className="material-icons-outlined btn-icon">rate_review</span>
+                            Review Answers
                         </button>
                         <button className="results-btn home" onClick={() => navigate("/dashboard")}>
                             Back to Dashboard
@@ -139,13 +147,15 @@ export default function QuizPage() {
         <div className="quiz-page">
             <div className="quiz-header">
                 <button className="quiz-back-btn" onClick={() => { if (confirm("Leave this quiz? Your progress will be saved.")) navigate("/dashboard"); }}>
-                    ← Exit
+                    <span className="material-icons-outlined btn-icon">arrow_back</span>
+                    Exit
                 </button>
                 <div className="quiz-info">
                     <span className="quiz-counter">{currentIndex + 1} / {sessionData.totalQuestions}</span>
                     {sessionData.isTimed && timeLeft !== null && (
                         <span className={`quiz-timer ${timeLeft <= 10 ? "warning" : ""}`}>
-                            ⏱ {timeLeft}s
+                            <span className="material-icons-outlined timer-icon">timer</span>
+                            {timeLeft}s
                         </span>
                     )}
                 </div>
@@ -188,7 +198,7 @@ export default function QuizPage() {
 
                     {feedback && (
                         <div className={`feedback-card ${feedback.isCorrect ? "correct" : "wrong"} fade-in`}>
-                            <div className="feedback-icon">{feedback.isCorrect ? "✅" : "❌"}</div>
+                            <span className="material-icons-outlined feedback-icon">{feedback.isCorrect ? "check_circle" : "cancel"}</span>
                             <div className="feedback-content">
                                 <strong>{feedback.isCorrect ? "Correct!" : "Incorrect"}</strong>
                                 {!feedback.isCorrect && <p>Correct answer: <strong>{feedback.correctAnswer}</strong></p>}
@@ -199,7 +209,8 @@ export default function QuizPage() {
 
                     {feedback && (
                         <button className="next-btn fade-in" onClick={handleNext}>
-                            {currentIndex < sessionData.questions.length - 1 ? "Next Question →" : "Finish Quiz 🏁"}
+                            {currentIndex < sessionData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
+                            <span className="material-icons-outlined btn-icon">{currentIndex < sessionData.questions.length - 1 ? "arrow_forward" : "flag"}</span>
                         </button>
                     )}
                 </div>

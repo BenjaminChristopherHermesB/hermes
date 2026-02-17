@@ -141,16 +141,19 @@ export default function AdminPage() {
     };
 
     const tabs = [
-        { id: "stats", label: "📊 Overview" },
-        { id: "users", label: "👥 Users" },
-        { id: "subjects", label: "📚 Subjects" },
-        { id: "upload", label: "📤 Upload" },
+        { id: "stats", icon: "bar_chart", label: "Overview" },
+        { id: "users", icon: "group", label: "Users" },
+        { id: "subjects", icon: "library_books", label: "Subjects" },
+        { id: "upload", icon: "upload_file", label: "Upload" },
     ];
 
     return (
         <div className="admin-page">
             <div className="admin-header">
-                <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>← Dashboard</button>
+                <button className="admin-back-btn" onClick={() => navigate("/dashboard")}>
+                    <span className="material-icons-outlined btn-icon">arrow_back</span>
+                    Dashboard
+                </button>
                 <h1 className="admin-title">Admin Panel</h1>
                 <div className="admin-user">
                     <span className="admin-badge">ADMIN</span>
@@ -160,6 +163,7 @@ export default function AdminPage() {
             <div className="admin-tabs">
                 {tabs.map((tab) => (
                     <button key={tab.id} className={`admin-tab ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
+                        <span className="material-icons-outlined tab-icon">{tab.icon}</span>
                         {tab.label}
                     </button>
                 ))}
@@ -169,22 +173,22 @@ export default function AdminPage() {
                 {activeTab === "stats" && stats && (
                     <div className="stats-grid fade-in">
                         <div className="stat-card">
-                            <div className="stat-card-icon">👥</div>
+                            <span className="material-icons-outlined stat-card-icon">group</span>
                             <div className="stat-card-value">{stats.totalUsers}</div>
                             <div className="stat-card-label">Total Users</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-card-icon">📚</div>
+                            <span className="material-icons-outlined stat-card-icon">library_books</span>
                             <div className="stat-card-value">{stats.totalSubjects}</div>
                             <div className="stat-card-label">Subjects</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-card-icon">❓</div>
+                            <span className="material-icons-outlined stat-card-icon">help_outline</span>
                             <div className="stat-card-value">{stats.totalQuestions}</div>
                             <div className="stat-card-label">Questions</div>
                         </div>
                         <div className="stat-card">
-                            <div className="stat-card-icon">📝</div>
+                            <span className="material-icons-outlined stat-card-icon">quiz</span>
                             <div className="stat-card-value">{stats.totalQuizzes}</div>
                             <div className="stat-card-label">Quizzes Taken</div>
                         </div>
@@ -214,11 +218,15 @@ export default function AdminPage() {
                                         <td>{new Date(u.created_at).toLocaleDateString()}</td>
                                         <td className="actions-cell">
                                             <button className="action-btn" onClick={() => handleRoleChange(u.id, u.role === "admin" ? "user" : "admin")} title={u.role === "admin" ? "Demote" : "Promote"}>
-                                                {u.role === "admin" ? "⬇️" : "⬆️"}
+                                                <span className="material-icons-outlined">{u.role === "admin" ? "arrow_downward" : "arrow_upward"}</span>
                                             </button>
-                                            <button className="action-btn" onClick={() => setResetModal(u)} title="Reset Password">🔑</button>
+                                            <button className="action-btn" onClick={() => setResetModal(u)} title="Reset Password">
+                                                <span className="material-icons-outlined">key</span>
+                                            </button>
                                             {u.id !== user.id && (
-                                                <button className="action-btn danger" onClick={() => handleDeleteUser(u.id)} title="Delete">🗑️</button>
+                                                <button className="action-btn danger" onClick={() => handleDeleteUser(u.id)} title="Delete">
+                                                    <span className="material-icons-outlined">delete</span>
+                                                </button>
                                             )}
                                         </td>
                                     </tr>
@@ -237,8 +245,12 @@ export default function AdminPage() {
                                     <span>{s.question_count} questions · {s.module_count} modules</span>
                                 </div>
                                 <div className="admin-subject-actions">
-                                    <button className="action-btn" onClick={() => handleExportSubject(s.id)} title="Export JSON">📥</button>
-                                    <button className="action-btn danger" onClick={() => handleDeleteSubject(s.id)} title="Delete">🗑️</button>
+                                    <button className="action-btn" onClick={() => handleExportSubject(s.id)} title="Export JSON">
+                                        <span className="material-icons-outlined">download</span>
+                                    </button>
+                                    <button className="action-btn danger" onClick={() => handleDeleteSubject(s.id)} title="Delete">
+                                        <span className="material-icons-outlined">delete</span>
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -249,14 +261,15 @@ export default function AdminPage() {
                 {activeTab === "upload" && (
                     <div className="upload-section fade-in">
                         <div className="upload-zone" onClick={() => fileInputRef.current?.click()}>
-                            <div className="upload-icon">📤</div>
+                            <span className="material-icons-outlined upload-icon">upload_file</span>
                             <h3>Upload Subject JSON</h3>
                             <p>Click to select a file or drag and drop</p>
                             <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileUpload} style={{ display: "none" }} />
                         </div>
                         {uploadStatus && (
                             <div className={`upload-status ${uploadStatus.type}`}>
-                                {uploadStatus.type === "success" ? "✅" : "❌"} {uploadStatus.message}
+                                <span className="material-icons-outlined status-msg-icon">{uploadStatus.type === "success" ? "check_circle" : "error"}</span>
+                                {uploadStatus.message}
                             </div>
                         )}
                     </div>
@@ -266,7 +279,10 @@ export default function AdminPage() {
             {mergeConflict && (
                 <div className="modal-overlay" onClick={() => { setMergeConflict(null); setPendingUpload(null); }}>
                     <div className="modal scale-in" onClick={(e) => e.stopPropagation()}>
-                        <h2 className="modal-title">⚠️ Subject Exists</h2>
+                        <h2 className="modal-title">
+                            <span className="material-icons-outlined modal-title-icon">warning</span>
+                            Subject Exists
+                        </h2>
                         <p style={{ marginBottom: "1.5rem", color: "var(--md-on-surface-variant)" }}>This subject already exists. Would you like to merge the new questions?</p>
                         <div className="modal-actions">
                             <button className="modal-btn cancel" onClick={() => handleMerge(false)}>Skip</button>
