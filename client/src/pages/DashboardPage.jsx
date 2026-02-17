@@ -14,7 +14,10 @@ export default function DashboardPage() {
     const [quizSetup, setQuizSetup] = useState(null);
     const [questionCount, setQuestionCount] = useState(20);
     const [isTimed, setIsTimed] = useState(false);
+    const [timerMode, setTimerMode] = useState("per-question");
     const [timePerQuestion, setTimePerQuestion] = useState(60);
+    const [minutesPerQuestion, setMinutesPerQuestion] = useState(1);
+    const [showFeedback, setShowFeedback] = useState(true);
 
     useEffect(() => {
         fetchSubjects();
@@ -34,13 +37,17 @@ export default function DashboardPage() {
     const startQuiz = async () => {
         if (!quizSetup) return;
         try {
+            const totalTime = timerMode === "block" ? Math.round(minutesPerQuestion * questionCount * 60) : null;
             const res = await api.post("/quiz/start", {
                 subjectId: quizSetup.id,
                 questionCount,
                 isTimed,
-                timePerQuestion: isTimed ? timePerQuestion : null,
+                timerMode: isTimed ? timerMode : null,
+                timePerQuestion: isTimed && timerMode === "per-question" ? timePerQuestion : null,
+                totalTime: isTimed && timerMode === "block" ? totalTime : null,
+                showFeedback,
             });
-            navigate(`/quiz/${quizSetup.id}`, { state: res.data });
+            navigate(`/quiz/${quizSetup.id}`, { state: { ...res.data, showFeedback } });
         } catch (err) {
             alert(err.response?.data?.error || "Failed to start quiz");
         }
@@ -50,6 +57,8 @@ export default function DashboardPage() {
         await logout();
         navigate("/login");
     };
+
+    const totalBlockTime = Math.round(minutesPerQuestion * questionCount);
 
     return (
         <div className="dashboard">
@@ -166,22 +175,74 @@ export default function DashboardPage() {
 
                         {isTimed && (
                             <div className="modal-field fade-in">
-                                <label>Time per Question: <strong>{timePerQuestion}s</strong></label>
-                                <input
-                                    type="range"
-                                    min="30"
-                                    max="180"
-                                    step="10"
-                                    value={timePerQuestion}
-                                    onChange={(e) => setTimePerQuestion(parseInt(e.target.value))}
-                                    className="range-slider"
-                                />
-                                <div className="range-labels">
-                                    <span>30s</span>
-                                    <span>3min</span>
+                                <div className="timer-mode-selector">
+                                    <button
+                                        className={`timer-mode-btn ${timerMode === "per-question" ? "active" : ""}`}
+                                        onClick={() => setTimerMode("per-question")}
+                                    >
+                                        <span className="material-icons-outlined" style={{ fontSize: "18px" }}>timer</span>
+                                        Per Question
+                                    </button>
+                                    <button
+                                        className={`timer-mode-btn ${timerMode === "block" ? "active" : ""}`}
+                                        onClick={() => setTimerMode("block")}
+                                    >
+                                        <span className="material-icons-outlined" style={{ fontSize: "18px" }}>hourglass_top</span>
+                                        Block Timer
+                                    </button>
                                 </div>
+
+                                {timerMode === "per-question" ? (
+                                    <div className="timer-config fade-in">
+                                        <label>Time per Question: <strong>{timePerQuestion}s</strong></label>
+                                        <input
+                                            type="range"
+                                            min="30"
+                                            max="180"
+                                            step="10"
+                                            value={timePerQuestion}
+                                            onChange={(e) => setTimePerQuestion(parseInt(e.target.value))}
+                                            className="range-slider"
+                                        />
+                                        <div className="range-labels">
+                                            <span>30s</span>
+                                            <span>3min</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="timer-config fade-in">
+                                        <label>Time per Question: <strong>{minutesPerQuestion} min</strong></label>
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="3"
+                                            step="0.5"
+                                            value={minutesPerQuestion}
+                                            onChange={(e) => setMinutesPerQuestion(parseFloat(e.target.value))}
+                                            className="range-slider"
+                                        />
+                                        <div className="range-labels">
+                                            <span>0.5 min</span>
+                                            <span>3 min</span>
+                                        </div>
+                                        <div className="block-timer-summary">
+                                            <span className="material-icons-outlined" style={{ fontSize: "16px" }}>schedule</span>
+                                            Total: <strong>{totalBlockTime} min</strong> for {questionCount} questions
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
+
+                        <div className="modal-field">
+                            <label className="toggle-label" onClick={() => setShowFeedback(!showFeedback)}>
+                                <div className={`toggle-switch ${showFeedback ? "active" : ""}`}>
+                                    <div className="toggle-thumb" />
+                                </div>
+                                <span>Immediate Feedback</span>
+                            </label>
+                            <p className="toggle-hint">{showFeedback ? "Show correct answer after each question" : "See all results at the end"}</p>
+                        </div>
 
                         <div className="modal-actions">
                             <button className="modal-btn cancel" onClick={() => setQuizSetup(null)}>Cancel</button>

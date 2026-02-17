@@ -8,7 +8,7 @@ router.use(auth);
 
 router.post("/start", async (req, res) => {
     try {
-        const { subjectId, questionCount, isTimed, timePerQuestion } = req.body;
+        const { subjectId, questionCount, isTimed, timerMode, timePerQuestion, totalTime, showFeedback } = req.body;
 
         if (!subjectId || !questionCount) {
             return res.status(400).json({ error: "Subject ID and question count are required" });
@@ -43,10 +43,12 @@ router.post("/start", async (req, res) => {
             [req.user.id, subjectId, actualCount]
         );
 
+        const effectiveTimePerQuestion = timerMode === "per-question" ? timePerQuestion : null;
+
         const session = await pool.query(
             `INSERT INTO quiz_sessions (user_id, subject_id, total_questions, is_timed, time_per_question)
       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-            [req.user.id, subjectId, actualCount, !!isTimed, isTimed ? timePerQuestion : null]
+            [req.user.id, subjectId, actualCount, !!isTimed, effectiveTimePerQuestion]
         );
 
         const questions = questionsResult.rows.map((q) => ({
@@ -60,7 +62,10 @@ router.post("/start", async (req, res) => {
             sessionId: session.rows[0].id,
             totalQuestions: actualCount,
             isTimed: !!isTimed,
-            timePerQuestion: isTimed ? timePerQuestion : null,
+            timerMode: isTimed ? (timerMode || "per-question") : null,
+            timePerQuestion: effectiveTimePerQuestion,
+            totalTime: timerMode === "block" ? totalTime : null,
+            showFeedback: showFeedback !== false,
             questions,
         });
     } catch (err) {
@@ -71,7 +76,7 @@ router.post("/start", async (req, res) => {
 
 router.post("/submit", async (req, res) => {
     try {
-        const { sessionId, questionId, selectedAnswer } = req.body;
+        const { sessionId, questionId, selectedAnswer, showFeedback } = req.body;
 
         if (!sessionId || !questionId) {
             return res.status(400).json({ error: "Session ID and question ID are required" });
@@ -98,16 +103,41 @@ router.post("/submit", async (req, res) => {
         const q = question.rows[0];
         const isCorrect = selectedAnswer === q.correct_answer;
 
-        await pool.query(
-            "INSERT INTO quiz_answers (session_id, question_id, selected_answer, is_correct) VALUES ($1, $2, $3, $4)",
-            [sessionId, questionId, selectedAnswer || null, isCorrect]
+        const existing = await pool.query(
+            "SELECT id, is_correct FROM quiz_answers WHERE session_id = $1 AND question_id = $2",
+            [sessionId, questionId]
         );
 
-        if (isCorrect) {
+        if (existing.rows.length > 0) {
+            const wasCorrect = existing.rows[0].is_correct;
             await pool.query(
-                "UPDATE quiz_sessions SET correct_count = correct_count + 1 WHERE id = $1",
-                [sessionId]
+                "UPDATE quiz_answers SET selected_answer = $1, is_correct = $2, answered_at = NOW() WHERE id = $3",
+                [selectedAnswer || null, isCorrect, existing.rows[0].id]
             );
+
+            if (wasCorrect && !isCorrect) {
+                await pool.query(
+                    "UPDATE quiz_sessions SET correct_count = correct_count - 1 WHERE id = $1",
+                    [sessionId]
+                );
+            } else if (!wasCorrect && isCorrect) {
+                await pool.query(
+                    "UPDATE quiz_sessions SET correct_count = correct_count + 1 WHERE id = $1",
+                    [sessionId]
+                );
+            }
+        } else {
+            await pool.query(
+                "INSERT INTO quiz_answers (session_id, question_id, selected_answer, is_correct) VALUES ($1, $2, $3, $4)",
+                [sessionId, questionId, selectedAnswer || null, isCorrect]
+            );
+
+            if (isCorrect) {
+                await pool.query(
+                    "UPDATE quiz_sessions SET correct_count = correct_count + 1 WHERE id = $1",
+                    [sessionId]
+                );
+            }
         }
 
         await pool.query(
@@ -121,11 +151,15 @@ router.post("/submit", async (req, res) => {
             [req.user.id, questionId, isCorrect ? 1 : 0]
         );
 
-        res.json({
-            isCorrect,
-            correctAnswer: q.correct_answer,
-            explanation: q.explanation,
-        });
+        if (showFeedback === false) {
+            res.json({ saved: true });
+        } else {
+            res.json({
+                isCorrect,
+                correctAnswer: q.correct_answer,
+                explanation: q.explanation,
+            });
+        }
     } catch (err) {
         console.error("Submit answer error:", err);
         res.status(500).json({ error: "Server error" });

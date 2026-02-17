@@ -10,15 +10,22 @@ export default function QuizPage() {
     const { subjectId } = useParams();
     const [sessionData, setSessionData] = useState(location.state || null);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [feedback, setFeedback] = useState(null);
+    const [selectedAnswers, setSelectedAnswers] = useState({});
+    const [feedbackMap, setFeedbackMap] = useState({});
+    const [flagged, setFlagged] = useState(new Set());
     const [score, setScore] = useState(0);
-    const [answeredCount, setAnsweredCount] = useState(0);
     const [completed, setCompleted] = useState(false);
     const [results, setResults] = useState(null);
     const [timeLeft, setTimeLeft] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showTimeUpModal, setShowTimeUpModal] = useState(false);
     const timerRef = useRef(null);
+    const timeUpProcessedRef = useRef(false);
+
+    const showFeedback = sessionData?.showFeedback !== false;
+    const isBlockTimer = sessionData?.timerMode === "block";
+    const isPerQuestionTimer = sessionData?.isTimed && !isBlockTimer;
 
     useEffect(() => {
         if (!sessionData) {
@@ -27,13 +34,18 @@ export default function QuizPage() {
     }, [sessionData, navigate]);
 
     useEffect(() => {
-        if (sessionData?.isTimed && sessionData?.timePerQuestion && !feedback && !completed) {
-            setTimeLeft(sessionData.timePerQuestion);
+        if (!sessionData?.isTimed || completed) return;
+
+        if (isBlockTimer && sessionData.totalTime) {
+            setTimeLeft(sessionData.totalTime);
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
                         clearInterval(timerRef.current);
-                        submitAnswer(null);
+                        if (!timeUpProcessedRef.current) {
+                            timeUpProcessedRef.current = true;
+                            setShowTimeUpModal(true);
+                        }
                         return 0;
                     }
                     return prev - 1;
@@ -41,43 +53,130 @@ export default function QuizPage() {
             }, 1000);
             return () => clearInterval(timerRef.current);
         }
-    }, [currentIndex, feedback, completed, sessionData]);
+    }, [sessionData, completed, isBlockTimer]);
 
-    const submitAnswer = useCallback(async (answer) => {
-        if (submitting || feedback) return;
+    useEffect(() => {
+        if (!isPerQuestionTimer || completed || feedbackMap[currentIndex]) return;
+
+        setTimeLeft(sessionData.timePerQuestion);
+        timerRef.current = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current);
+                    submitAnswer(currentIndex, null);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timerRef.current);
+    }, [currentIndex, completed, sessionData, isPerQuestionTimer]);
+
+    const submitAnswer = useCallback(async (qIndex, answer) => {
+        if (submitting) return;
+        const q = sessionData.questions[qIndex];
+        if (showFeedback && feedbackMap[qIndex]) return;
+
         setSubmitting(true);
-        clearInterval(timerRef.current);
+        if (isPerQuestionTimer) clearInterval(timerRef.current);
 
         try {
             const res = await api.post("/quiz/submit", {
                 sessionId: sessionData.sessionId,
-                questionId: sessionData.questions[currentIndex].id,
+                questionId: q.id,
                 selectedAnswer: answer,
+                showFeedback,
             });
 
-            setFeedback(res.data);
-            setAnsweredCount((p) => p + 1);
-            if (res.data.isCorrect) setScore((p) => p + 1);
+            setSelectedAnswers((prev) => ({ ...prev, [qIndex]: answer }));
+
+            if (showFeedback) {
+                setFeedbackMap((prev) => ({ ...prev, [qIndex]: res.data }));
+                if (res.data.isCorrect) setScore((p) => p + 1);
+            }
         } catch (err) {
             console.error("Submit error:", err);
         } finally {
             setSubmitting(false);
         }
-    }, [currentIndex, sessionData, submitting, feedback]);
+    }, [sessionData, submitting, feedbackMap, showFeedback, isPerQuestionTimer]);
+
+    const handleOptionClick = (option) => {
+        if (showFeedback && feedbackMap[currentIndex]) return;
+        setSelectedAnswers((prev) => ({ ...prev, [currentIndex]: option }));
+    };
 
     const handleSubmitClick = () => {
-        if (selectedAnswer === null) return;
-        submitAnswer(selectedAnswer);
+        const answer = selectedAnswers[currentIndex];
+        if (answer === undefined || answer === null) return;
+        submitAnswer(currentIndex, answer);
     };
 
     const handleNext = () => {
         if (currentIndex < sessionData.questions.length - 1) {
             setCurrentIndex((p) => p + 1);
-            setSelectedAnswer(null);
-            setFeedback(null);
-        } else {
+        } else if (showFeedback) {
             completeQuiz();
         }
+    };
+
+    const handlePrev = () => {
+        if (currentIndex > 0) setCurrentIndex((p) => p - 1);
+    };
+
+    const jumpToQuestion = (idx) => {
+        if (showFeedback && feedbackMap[idx] && idx !== currentIndex) return;
+        setCurrentIndex(idx);
+        setSidebarOpen(false);
+    };
+
+    const toggleFlag = () => {
+        setFlagged((prev) => {
+            const next = new Set(prev);
+            if (next.has(currentIndex)) next.delete(currentIndex);
+            else next.add(currentIndex);
+            return next;
+        });
+    };
+
+    const handleTimeUpConfirm = async () => {
+        setShowTimeUpModal(false);
+        await submitAllAndComplete();
+    };
+
+    const submitAllAndComplete = async () => {
+        if (!sessionData) return;
+        for (let i = 0; i < sessionData.questions.length; i++) {
+            if (!feedbackMap[i] && selectedAnswers[i] === undefined) {
+                try {
+                    await api.post("/quiz/submit", {
+                        sessionId: sessionData.sessionId,
+                        questionId: sessionData.questions[i].id,
+                        selectedAnswer: null,
+                        showFeedback: false,
+                    });
+                } catch (err) {
+                    console.error("Auto-submit error:", err);
+                }
+            } else if (!showFeedback && selectedAnswers[i] !== undefined && !feedbackMap[i]) {
+                try {
+                    await api.post("/quiz/submit", {
+                        sessionId: sessionData.sessionId,
+                        questionId: sessionData.questions[i].id,
+                        selectedAnswer: selectedAnswers[i],
+                        showFeedback: false,
+                    });
+                } catch (err) {
+                    console.error("Auto-submit error:", err);
+                }
+            }
+        }
+        await completeQuiz();
+    };
+
+    const handleFinishQuiz = () => {
+        if (isBlockTimer) clearInterval(timerRef.current);
+        submitAllAndComplete();
     };
 
     const completeQuiz = async () => {
@@ -91,10 +190,39 @@ export default function QuizPage() {
         }
     };
 
+    const formatTime = (seconds) => {
+        if (seconds === null) return "";
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, "0")}`;
+    };
+
+    const getQuestionStatus = (idx) => {
+        if (showFeedback && feedbackMap[idx]) {
+            return feedbackMap[idx].isCorrect ? "correct" : "wrong";
+        }
+        if (selectedAnswers[idx] !== undefined) return "answered";
+        if (flagged.has(idx)) return "flagged";
+        return "unanswered";
+    };
+
+    const getStatusTooltip = (idx) => {
+        const status = getQuestionStatus(idx);
+        if (status === "correct") return "Correct";
+        if (status === "wrong") return "Incorrect";
+        if (status === "answered") return "Answered";
+        if (status === "flagged") return "Flagged for review";
+        return "Not answered";
+    };
+
     if (!sessionData) return null;
 
     const question = sessionData.questions[currentIndex];
-    const progress = ((currentIndex + (feedback ? 1 : 0)) / sessionData.totalQuestions) * 100;
+    const answeredCount = showFeedback ? Object.keys(feedbackMap).length : Object.keys(selectedAnswers).length;
+    const progress = (answeredCount / sessionData.totalQuestions) * 100;
+    const currentFeedback = feedbackMap[currentIndex];
+    const currentSelected = selectedAnswers[currentIndex];
+    const isLocked = showFeedback && !!currentFeedback;
 
     if (completed) {
         const scoreVal = results?.score || 0;
@@ -151,81 +279,160 @@ export default function QuizPage() {
     return (
         <div className="quiz-page">
             <div className="quiz-header">
-                <button className="quiz-back-btn" onClick={() => { if (confirm("Leave this quiz? Your progress will be saved.")) navigate("/dashboard"); }}>
-                    <span className="material-icons-outlined btn-icon">arrow_back</span>
-                    Exit
-                </button>
+                <div className="quiz-header-left">
+                    <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                        <span className="material-icons-outlined">{sidebarOpen ? "close" : "grid_view"}</span>
+                    </button>
+                    <button className="quiz-back-btn" onClick={() => { if (confirm("Leave this quiz? Your progress will be saved.")) navigate("/dashboard"); }}>
+                        <span className="material-icons-outlined btn-icon">arrow_back</span>
+                        Exit
+                    </button>
+                </div>
                 <div className="quiz-info">
                     <span className="quiz-counter">{currentIndex + 1} / {sessionData.totalQuestions}</span>
                     {sessionData.isTimed && timeLeft !== null && (
-                        <span className={`quiz-timer ${timeLeft <= 10 ? "warning" : ""}`}>
+                        <span className={`quiz-timer ${timeLeft <= 30 && isBlockTimer ? "warning" : ""} ${timeLeft <= 10 && isPerQuestionTimer ? "warning" : ""}`}>
                             <span className="material-icons-outlined timer-icon">timer</span>
-                            {timeLeft}s
+                            {isBlockTimer ? formatTime(timeLeft) : `${timeLeft}s`}
                         </span>
                     )}
                 </div>
-                <div className="quiz-score">Score: {score}</div>
+                <div className="quiz-header-right">
+                    {!showFeedback && (
+                        <button className="finish-quiz-btn" onClick={handleFinishQuiz}>
+                            <span className="material-icons-outlined btn-icon">flag</span>
+                            Finish
+                        </button>
+                    )}
+                    <div className="quiz-score">Score: {showFeedback ? score : `${answeredCount}/${sessionData.totalQuestions}`}</div>
+                </div>
             </div>
 
             <div className="quiz-progress-bar">
                 <div className="quiz-progress-fill" style={{ width: `${progress}%` }} />
             </div>
 
-            <div className="quiz-content">
-                <div className="quiz-question-card fade-in" key={currentIndex}>
-                    <div className="question-module">Module {question.module}</div>
-                    <h2 className="question-text"><Latex>{question.question}</Latex></h2>
-
-                    <div className="options-grid">
-                        {question.options.map((option, idx) => {
-                            let optionClass = "option-btn";
-                            if (feedback) {
-                                if (option === feedback.correctAnswer) optionClass += " correct";
-                                else if (option === selectedAnswer && !feedback.isCorrect) optionClass += " wrong";
-                                else optionClass += " disabled";
-                            } else if (option === selectedAnswer) {
-                                optionClass += " selected";
-                            }
-
+            <div className="quiz-body">
+                <aside className={`quiz-sidebar ${sidebarOpen ? "open" : ""}`}>
+                    <div className="sidebar-header">
+                        <h3>Questions</h3>
+                        <div className="sidebar-legend">
+                            <span className="legend-item"><span className="legend-dot answered" /> Answered</span>
+                            <span className="legend-item"><span className="legend-dot flagged" /> Flagged</span>
+                            {showFeedback && (
+                                <>
+                                    <span className="legend-item"><span className="legend-dot correct" /> Correct</span>
+                                    <span className="legend-item"><span className="legend-dot wrong" /> Wrong</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <div className="sidebar-grid">
+                        {sessionData.questions.map((_, idx) => {
+                            const status = getQuestionStatus(idx);
                             return (
                                 <button
                                     key={idx}
-                                    className={optionClass}
-                                    onClick={() => !feedback && setSelectedAnswer(option)}
-                                    disabled={!!feedback}
+                                    className={`sidebar-q-btn ${status} ${idx === currentIndex ? "current" : ""} ${flagged.has(idx) ? "flag-marker" : ""}`}
+                                    onClick={() => jumpToQuestion(idx)}
+                                    title={getStatusTooltip(idx)}
                                 >
-                                    <span className="option-letter">{String.fromCharCode(65 + idx)}</span>
-                                    <span className="option-text"><Latex>{option}</Latex></span>
+                                    {idx + 1}
+                                    {flagged.has(idx) && <span className="flag-dot" />}
                                 </button>
                             );
                         })}
                     </div>
+                </aside>
 
-                    {!feedback && selectedAnswer !== null && (
-                        <button className="submit-btn fade-in" onClick={handleSubmitClick} disabled={submitting}>
-                            {submitting ? <span className="btn-spinner" /> : "Submit Answer"}
-                        </button>
-                    )}
-
-                    {feedback && (
-                        <div className={`feedback-card ${feedback.isCorrect ? "correct" : "wrong"} fade-in`}>
-                            <span className="material-icons-outlined feedback-icon">{feedback.isCorrect ? "check_circle" : "cancel"}</span>
-                            <div className="feedback-content">
-                                <strong>{feedback.isCorrect ? "Correct!" : "Incorrect"}</strong>
-                                {!feedback.isCorrect && <p>Correct answer: <strong><Latex>{feedback.correctAnswer}</Latex></strong></p>}
-                                {feedback.explanation && <p className="feedback-explanation"><Latex>{feedback.explanation}</Latex></p>}
-                            </div>
+                <div className="quiz-content">
+                    <div className="quiz-question-card fade-in" key={currentIndex}>
+                        <div className="question-top-row">
+                            <div className="question-module">Module {question.module}</div>
+                            <button className={`flag-btn ${flagged.has(currentIndex) ? "active" : ""}`} onClick={toggleFlag} title="Mark for review">
+                                <span className="material-icons-outlined">{flagged.has(currentIndex) ? "bookmark" : "bookmark_border"}</span>
+                            </button>
                         </div>
-                    )}
+                        <h2 className="question-text"><Latex>{question.question}</Latex></h2>
 
-                    {feedback && (
-                        <button className="next-btn fade-in" onClick={handleNext}>
-                            {currentIndex < sessionData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
-                            <span className="material-icons-outlined btn-icon">{currentIndex < sessionData.questions.length - 1 ? "arrow_forward" : "flag"}</span>
-                        </button>
-                    )}
+                        <div className="options-grid">
+                            {question.options.map((option, idx) => {
+                                let optionClass = "option-btn";
+                                if (isLocked) {
+                                    if (option === currentFeedback.correctAnswer) optionClass += " correct";
+                                    else if (option === currentSelected && !currentFeedback.isCorrect) optionClass += " wrong";
+                                    else optionClass += " disabled";
+                                } else if (option === currentSelected) {
+                                    optionClass += " selected";
+                                }
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        className={optionClass}
+                                        onClick={() => handleOptionClick(option)}
+                                        disabled={isLocked}
+                                    >
+                                        <span className="option-letter">{String.fromCharCode(65 + idx)}</span>
+                                        <span className="option-text"><Latex>{option}</Latex></span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {!isLocked && currentSelected !== undefined && showFeedback && (
+                            <button className="submit-btn fade-in" onClick={handleSubmitClick} disabled={submitting}>
+                                {submitting ? <span className="btn-spinner" /> : "Submit Answer"}
+                            </button>
+                        )}
+
+                        {isLocked && currentFeedback && (
+                            <div className={`feedback-card ${currentFeedback.isCorrect ? "correct" : "wrong"} fade-in`}>
+                                <span className="material-icons-outlined feedback-icon">{currentFeedback.isCorrect ? "check_circle" : "cancel"}</span>
+                                <div className="feedback-content">
+                                    <strong>{currentFeedback.isCorrect ? "Correct!" : "Incorrect"}</strong>
+                                    {!currentFeedback.isCorrect && <p>Correct answer: <strong><Latex>{currentFeedback.correctAnswer}</Latex></strong></p>}
+                                    {currentFeedback.explanation && <p className="feedback-explanation"><Latex>{currentFeedback.explanation}</Latex></p>}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="question-nav">
+                            <button className="nav-btn" onClick={handlePrev} disabled={currentIndex === 0}>
+                                <span className="material-icons-outlined">arrow_back</span>
+                                Previous
+                            </button>
+
+                            {showFeedback && isLocked && (
+                                <button className="nav-btn primary" onClick={handleNext}>
+                                    {currentIndex < sessionData.questions.length - 1 ? "Next Question" : "Finish Quiz"}
+                                    <span className="material-icons-outlined">{currentIndex < sessionData.questions.length - 1 ? "arrow_forward" : "flag"}</span>
+                                </button>
+                            )}
+
+                            {!showFeedback && (
+                                <button className="nav-btn primary" onClick={handleNext} disabled={currentIndex >= sessionData.questions.length - 1}>
+                                    Next Question
+                                    <span className="material-icons-outlined">arrow_forward</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            {showTimeUpModal && (
+                <div className="modal-overlay">
+                    <div className="time-up-modal scale-in">
+                        <span className="material-icons-outlined time-up-icon">alarm</span>
+                        <h2>Time is up!</h2>
+                        <p>Submitting your quiz...</p>
+                        <button className="time-up-btn" onClick={handleTimeUpConfirm}>
+                            View Results
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
