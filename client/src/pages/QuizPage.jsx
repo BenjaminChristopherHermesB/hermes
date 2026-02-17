@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import api from "../services/api";
+import Latex from "../components/Latex";
 import "./QuizPage.css";
 
 export default function QuizPage() {
@@ -32,7 +33,7 @@ export default function QuizPage() {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
                         clearInterval(timerRef.current);
-                        handleSubmitAnswer(null);
+                        submitAnswer(null);
                         return 0;
                     }
                     return prev - 1;
@@ -42,7 +43,7 @@ export default function QuizPage() {
         }
     }, [currentIndex, feedback, completed, sessionData]);
 
-    const handleSubmitAnswer = useCallback(async (answer) => {
+    const submitAnswer = useCallback(async (answer) => {
         if (submitting || feedback) return;
         setSubmitting(true);
         clearInterval(timerRef.current);
@@ -55,7 +56,6 @@ export default function QuizPage() {
             });
 
             setFeedback(res.data);
-            setSelectedAnswer(answer);
             setAnsweredCount((p) => p + 1);
             if (res.data.isCorrect) setScore((p) => p + 1);
         } catch (err) {
@@ -64,6 +64,11 @@ export default function QuizPage() {
             setSubmitting(false);
         }
     }, [currentIndex, sessionData, submitting, feedback]);
+
+    const handleSubmitClick = () => {
+        if (selectedAnswer === null) return;
+        submitAnswer(selectedAnswer);
+    };
 
     const handleNext = () => {
         if (currentIndex < sessionData.questions.length - 1) {
@@ -169,7 +174,7 @@ export default function QuizPage() {
             <div className="quiz-content">
                 <div className="quiz-question-card fade-in" key={currentIndex}>
                     <div className="question-module">Module {question.module}</div>
-                    <h2 className="question-text">{question.question}</h2>
+                    <h2 className="question-text"><Latex>{question.question}</Latex></h2>
 
                     <div className="options-grid">
                         {question.options.map((option, idx) => {
@@ -186,23 +191,29 @@ export default function QuizPage() {
                                 <button
                                     key={idx}
                                     className={optionClass}
-                                    onClick={() => !feedback && handleSubmitAnswer(option)}
+                                    onClick={() => !feedback && setSelectedAnswer(option)}
                                     disabled={!!feedback}
                                 >
                                     <span className="option-letter">{String.fromCharCode(65 + idx)}</span>
-                                    <span className="option-text">{option}</span>
+                                    <span className="option-text"><Latex>{option}</Latex></span>
                                 </button>
                             );
                         })}
                     </div>
+
+                    {!feedback && selectedAnswer !== null && (
+                        <button className="submit-btn fade-in" onClick={handleSubmitClick} disabled={submitting}>
+                            {submitting ? <span className="btn-spinner" /> : "Submit Answer"}
+                        </button>
+                    )}
 
                     {feedback && (
                         <div className={`feedback-card ${feedback.isCorrect ? "correct" : "wrong"} fade-in`}>
                             <span className="material-icons-outlined feedback-icon">{feedback.isCorrect ? "check_circle" : "cancel"}</span>
                             <div className="feedback-content">
                                 <strong>{feedback.isCorrect ? "Correct!" : "Incorrect"}</strong>
-                                {!feedback.isCorrect && <p>Correct answer: <strong>{feedback.correctAnswer}</strong></p>}
-                                {feedback.explanation && <p className="feedback-explanation">{feedback.explanation}</p>}
+                                {!feedback.isCorrect && <p>Correct answer: <strong><Latex>{feedback.correctAnswer}</Latex></strong></p>}
+                                {feedback.explanation && <p className="feedback-explanation"><Latex>{feedback.explanation}</Latex></p>}
                             </div>
                         </div>
                     )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import Latex from "../components/Latex";
 import "./QuizReviewPage.css";
 
 export default function QuizReviewPage() {
@@ -80,7 +81,7 @@ export default function QuizReviewPage() {
                                 {answer.is_correct ? "Correct" : "Wrong"}
                             </span>
                         </div>
-                        <p className="review-question-text">{answer.question}</p>
+                        <p className="review-question-text"><Latex>{answer.question}</Latex></p>
                         <div className="review-options">
                             {answer.options.map((opt, optIdx) => (
                                 <div
@@ -88,7 +89,7 @@ export default function QuizReviewPage() {
                                     className={`review-option ${opt === answer.correct_answer ? "correct-answer" : ""} ${opt === answer.selected_answer && !answer.is_correct ? "wrong-answer" : ""}`}
                                 >
                                     <span className="review-opt-letter">{String.fromCharCode(65 + optIdx)}</span>
-                                    <span>{opt}</span>
+                                    <span><Latex>{opt}</Latex></span>
                                     {opt === answer.correct_answer && <span className="material-icons-outlined review-opt-badge correct">check</span>}
                                     {opt === answer.selected_answer && opt !== answer.correct_answer && <span className="material-icons-outlined review-opt-badge wrong">close</span>}
                                 </div>
@@ -96,7 +97,7 @@ export default function QuizReviewPage() {
                         </div>
                         {answer.explanation && (
                             <div className="review-explanation">
-                                <strong><span className="material-icons-outlined explanation-icon">lightbulb</span> Explanation:</strong> {answer.explanation}
+                                <strong><span className="material-icons-outlined explanation-icon">lightbulb</span> Explanation:</strong> <Latex>{answer.explanation}</Latex>
                             </div>
                         )}
                     </div>

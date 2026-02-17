@@ -257,6 +257,46 @@
     box-shadow: var(--md-shadow);
 }
 
+.submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.875rem;
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-radius: var(--md-radius-full);
+    letter-spacing: 0.01em;
+    margin-bottom: 1rem;
+}
+
+.submit-btn:hover:not(:disabled) {
+    box-shadow: var(--md-shadow);
+}
+
+.submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .btn-icon {
     font-size: 18px;
 }
