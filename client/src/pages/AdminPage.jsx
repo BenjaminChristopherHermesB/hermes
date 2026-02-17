@@ -42,7 +42,7 @@ export default function AdminPage() {
     };
 
     const sanitizeJsonLatex = (text) => {
-        return text.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+        return text.replace(/(\\\\)|(\\(?!["\\/bfnrtu]))/g, "\\\\");
     };
 
     const handleFileUpload = async (e) => {
