@@ -64,7 +64,8 @@ export default function AdminPage() {
                 setMergeConflict(err.response.data);
                 setPendingUpload(data);
             } else {
-                setUploadStatus({ type: "error", message: err.response?.data?.error || "Upload failed" });
+                console.error("Upload error:", err.response?.status, err.response?.data || err.message);
+                setUploadStatus({ type: "error", message: err.response?.data?.error || err.message || "Upload failed" });
             }
         }
         if (fileInputRef.current) fileInputRef.current.value = "";
