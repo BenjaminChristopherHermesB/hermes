@@ -1,0 +1,365 @@
+{
+  "subject": "Aptitude Proficiency Enhancement - 1",
+  "questions": [
+    {
+      "module": 1,
+      "question": "What is the unit digit in $\{(6374)^{1793} \\times (625)^{317} \\times (341)^{491}\}$?",
+      "options": [
+        "0",
+        "2",
+        "3",
+        "5"
+      ],
+      "correct_answer": "0",
+      "explanation": "Unit digit of $4^{\\text{odd}}$ is $4$. Unit digit of $5^{\\text{any}}$ is $5$. Unit digit of $1^{\\text{any}}$ is $1$. Product = $4 \\times 5 \\times 1 = 20$. Unit digit is $0$."
+    },
+    {
+      "module": 1,
+      "question": "The sum of all two digit numbers divisible by $5$ is",
+      "options": [
+        "1035",
+        "1245",
+        "1230",
+        "945"
+      ],
+      "correct_answer": "945",
+      "explanation": "Two digit numbers divisible by $5$ are $10, 15, 20, \\dots, 95$. This is an AP with $a=10$, $l=95$, $d=5$. Number of terms $n = (95-10)/5 + 1 = 18$. Sum = $(n/2)(a+l) = (18/2)(10+95) = 9 \\times 105 = 945$."
+    },
+    {
+      "module": 1,
+      "question": "A number when divided by $899$ gives a remainder $63$. If the same number is divided by $29$, the remainder will be",
+      "options": [
+        "10",
+        "5",
+        "4",
+        "2"
+      ],
+      "correct_answer": "5",
+      "explanation": "Number = $899k + 63$. Since $899$ is divisible by $29$ ($29 \\times 31 = 899$), we only need to divide the remainder $63$ by $29$. $63 = 29 \\times 2 + 5$. Remainder is $5$."
+    },
+    {
+      "module": 1,
+      "question": "If $9171X14264$ is divisible by $88$, what is the value of $X$?",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correct_answer": "5",
+      "explanation": "For divisibility by $88$, the number must be divisible by $8$ and $11$. $264$ is divisible by $8$. For $11$, the difference between the sum of digits at odd places and even places must be $0$ or divisible by $11$. (Sum of digits at odd places) - (Sum of digits at even places) $= (9+7+X+4+6) - (1+1+1+2+4) = (26+X) - 9 = 17+X$. For $17+X$ to be divisible by $11$, $X=5$."
+    },
+    {
+      "module": 1,
+      "question": "The divisor is $25$ times the quotient and $5$ times the remainder. If the quotient is $16$, the dividend is",
+      "options": [
+        "6400",
+        "6480",
+        "400",
+        "480"
+      ],
+      "correct_answer": "6480",
+      "explanation": "Divisor = $25 \\times \\text{Quotient} = 25 \\times 16 = 400$. Divisor = $5 \\times \\text{Remainder} \\implies 400 = 5 \\times \\text{Remainder} \\implies \\text{Remainder} = 80$. Dividend = $(\\text{Divisor} \\times \\text{Quotient}) + \\text{Remainder} = (400 \\times 16) + 80 = 6400 + 80 = 6480$."
+    },
+    {
+      "module": 1,
+      "question": "A six digit number is formed by repeating a three digit number; for example, $256, 256$ or $678, 678$ etc. Any number of this form is always exactly divisible by:",
+      "options": [
+        "7 only",
+        "11 only",
+        "13 only",
+        "1001"
+      ],
+      "correct_answer": "1001",
+      "explanation": "A number of the form $xyzxyz = xyz \\times 1000 + xyz = xyz \\times 1001$. Since $1001 = 7 \\times 11 \\times 13$, the number is divisible by $1001$."
+    },
+    {
+      "module": 1,
+      "question": "The smallest number which when divided by $3, 5, 8, 12$ leaves remainders $2, 4, 7, 11$ respectively is",
+      "options": [
+        "119",
+        "110",
+        "129",
+        "65"
+      ],
+      "correct_answer": "119",
+      "explanation": "The difference between divisor and remainder is constant: $3-2=1$, $5-4=1$, $8-7=1$, $12-11=1$. LCM of $3, 5, 8, 12$ is $120$. Required number = LCM - Constant difference $= 120 - 1 = 119$."
+    },
+    {
+      "module": 1,
+      "question": "A number when divided by $5$ leaves a remainder of $4$. When the double (i.e., twice) of that number is divided by $5$ the remainder will be:",
+      "options": [
+        "0",
+        "1",
+        "3",
+        "cannot be determined"
+      ],
+      "correct_answer": "3",
+      "explanation": "Let number $N = 5k + 4$. Double the number $2N = 10k + 8$. $2N$ divided by $5$: $(10k + 8)/5 \\implies$ Remainder is $3$ (since $8/5$ gives remainder $3$)."
+    },
+    {
+      "module": 1,
+      "question": "Six bells commence tolling together and toll at intervals of $2, 4, 6, 8, 10$ and $12$ seconds respectively. In $30$ minutes, how many times do they toll together?",
+      "options": [
+        "4",
+        "10",
+        "15",
+        "16"
+      ],
+      "correct_answer": "16",
+      "explanation": "LCM of $2, 4, 6, 8, 10, 12$ is $120$ seconds $= 2$ minutes. In $30$ minutes, they toll together $(30/2) + 1 = 16$ times (including the start)."
+    },
+    {
+      "module": 1,
+      "question": "The product of two numbers is $4107$. If the H.C.F. of these numbers is $37$, then the greater number is:",
+      "options": [
+        "101",
+        "107",
+        "111",
+        "185"
+      ],
+      "correct_answer": "111",
+      "explanation": "Let numbers be $37a$ and $37b$. Product = $37a \\times 37b = 1369ab = 4107 \\implies ab = 3$. Since $a$ and $b$ are co-prime, pairs are $(1, 3)$. Numbers are $37 \\times 1 = 37$ and $37 \\times 3 = 111$. Greater number is $111$."
+    },
+    {
+      "module": 1,
+      "question": "The value of $k$ if $(x-1)$ is a factor of $4x^3 + 3x^2 - 4x + k$ is",
+      "options": [
+        "1",
+        "2",
+        "-3",
+        "3"
+      ],
+      "correct_answer": "-3",
+      "explanation": "If $(x-1)$ is a factor, then $P(1) = 0$. $4(1)^3 + 3(1)^2 - 4(1) + k = 0 \\implies 4 + 3 - 4 + k = 0 \\implies 3 + k = 0 \\implies k = -3$."
+    },
+    {
+      "module": 1,
+      "question": "If $1.5x = 0.04y$, then value of $(y-x)/(y+x)$ is",
+      "options": [
+        "$730/77$",
+        "$73/77$",
+        "$7.3/77$",
+        "none"
+      ],
+      "correct_answer": "$73/77$",
+      "explanation": "$x/y = 0.04/1.5 = 4/150 = 2/75$. Let $x=2k$, $y=75k$. $(y-x)/(y+x) = (75-2)/(75+2) = 73/77$."
+    },
+    {
+      "module": 1,
+      "question": "A number consists of two digits. If the digits interchange places and the new number is added to the original number, then the resulting number will be divisible by:",
+      "options": [
+        "3",
+        "5",
+        "9",
+        "11"
+      ],
+      "correct_answer": "11",
+      "explanation": "Let number be $10x + y$. Reversed number is $10y + x$. Sum = $11x + 11y = 11(x+y)$. Always divisible by $11$."
+    },
+    {
+      "module": 1,
+      "question": "Ten watermelons, six mangoes and nine guavas cost Rs. $1580$. What is the cost of six mangoes, ten watermelons and four guavas?",
+      "options": [
+        "1280",
+        "1080",
+        "1180",
+        "cannot be determined"
+      ],
+      "correct_answer": "cannot be determined",
+      "explanation": "We have one equation: $10W + 6M + 9G = 1580$. We need to find $10W + 6M + 4G$. With $3$ variables and only $1$ equation, we cannot determine the unique value."
+    },
+    {
+      "module": 1,
+      "question": "Reynolds offers a total of $150$ pens to its customers. As per the scheme, one pen will be offered on the purchase of a \"Quantitative Aptitude\" book. Out of $150$ pens, the cost of some pens is Rs. $3$ and the cost of the rest of the pens is Rs. $5$. At the most, how many customers can avail a pen of Rs. $5$ as an offer from the company if the total cost of the pens cannot exceed Rs. $745$.",
+      "options": [
+        "45",
+        "120",
+        "147",
+        "None of these"
+      ],
+      "correct_answer": "147",
+      "explanation": "Let $x$ be number of Rs. $5$ pens. Then $(150-x)$ are Rs. $3$ pens. $5x + 3(150-x) \\le 745 \\implies 5x + 450 - 3x \\le 745 \\implies 2x \\le 295 \\implies x \\le 147.5$. Max integer $x$ is $147$."
+    },
+    {
+      "module": 1,
+      "question": "$4/15$ of $5/7$ of a number is greater than $4/9$ of $2/5$ of the same number by $8$. What is half of that number?",
+      "options": [
+        "275",
+        "315",
+        "240",
+        "475"
+      ],
+      "correct_answer": "315",
+      "explanation": "Let number be $x$. $(4/15 \\times 5/7 \\times x) - (4/9 \\times 2/5 \\times x) = 8 \\implies (4/21)x - (8/45)x = 8$. LCM of $21$ and $45$ is $315$. $(60x - 56x)/315 = 8 \\implies 4x = 8 \\times 315 \\implies x = 630$. Half of $x = 315$."
+    },
+    {
+      "module": 1,
+      "question": "A crate of mangoes contains one bruised mango for every $30$ mangoes in the crate. If $3$ out of every $4$ bruised mangoes are considered unsaleable, and there are $12$ unsaleable mangoes in the crate, how many mangoes are there in the crate?",
+      "options": [
+        "480",
+        "500",
+        "420",
+        "520"
+      ],
+      "correct_answer": "480",
+      "explanation": "$12$ unsaleable mangoes represent $3/4$ of bruised mangoes. Total bruised = $12 \\times (4/3) = 16$. Total mangoes = $16 \\times 30 = 480$."
+    },
+    {
+      "module": 1,
+      "question": "The number of prime factors of $(3 \\times 5)^{12} (2 \\times 7)^{10} (10)^{25}$ is:",
+      "options": [
+        "47",
+        "60",
+        "72",
+        "None"
+      ],
+      "correct_answer": "None",
+      "explanation": "Expression = $3^{12} \\times 5^{12} \\times 2^{10} \\times 7^{10} \\times (2 \\times 5)^{25} = 3^{12} \\times 5^{12} \\times 2^{10} \\times 7^{10} \\times 2^{25} \\times 5^{25} = 2^{35} \\times 3^{12} \\times 5^{37} \\times 7^{10}$. Total prime factors = $35 + 12 + 37 + 10 = 94$. Option 'None' is correct."
+    },
+    {
+      "module": 1,
+      "question": "How many numbers are there between $200$ and $800$ which are divisible by both $5$ and $7$?",
+      "options": [
+        "35",
+        "16",
+        "17",
+        "can't be determined"
+      ],
+      "correct_answer": "17",
+      "explanation": "LCM of $5$ and $7$ is $35$. Multiples of $35$ between $200$ and $800$: First is $210$ ($35 \\times 6$), last is $770$ ($35 \\times 22$). Number of terms = $22 - 6 + 1 = 17$."
+    },
+    {
+      "module": 1,
+      "question": "A boy was asked to find the value of $3/8$ of a sum of money. Instead of multiplying the sum by $3/8$ he divided it by $3/8$ and then his answer exceeded by Rs. $55$. Find the correct answer?",
+      "options": [
+        "Rs. 9",
+        "Rs. 24",
+        "Rs. 64",
+        "Rs. 1,320"
+      ],
+      "correct_answer": "Rs. 9",
+      "explanation": "Let sum be $x$. $(x / (3/8)) - (x \\times 3/8) = 55 \\implies (8x/3) - (3x/8) = 55 \\implies (64x - 9x)/24 = 55 \\implies 55x = 55 \\times 24 \\implies x = 24$. Correct answer = $24 \\times 3/8 = 9$."
+    },
+    {
+      "module": 1,
+      "question": "A group of friends decided to go on a picnic with eatables worth Rs. $96$. Four of them did not turn up. As a consequence, the remaining ones had to contribute Rs. $4$ each extra. The number of those who attended the picnic was",
+      "options": [
+        "8",
+        "12",
+        "16",
+        "24"
+      ],
+      "correct_answer": "8",
+      "explanation": "Let original number be $x$. $96/(x-4) - 96/x = 4 \\implies 24/(x-4) - 24/x = 1 \\implies 24x - 24(x-4) = x(x-4) \\implies 96 = x^2 - 4x \\implies x^2 - 4x - 96 = 0 \\implies (x-12)(x+8)=0 \\implies x=12$. Attended = $12-4 = 8$."
+    },
+    {
+      "module": 1,
+      "question": "Some friends planned to go for a picnic and spend Rs. $100$ on eatables. $5$ of them did not turn up. As a consequence, the remaining ones had to contribute Rs. $1$ each extra. The number of those who attended the picnic was",
+      "options": [
+        "20",
+        "25",
+        "30",
+        "None"
+      ],
+      "correct_answer": "20",
+      "explanation": "Let original number be $x$. $100/(x-5) - 100/x = 1 \\implies 100x - 100(x-5) = x(x-5) \\implies 500 = x^2 - 5x \\implies x^2 - 5x - 500 = 0 \\implies (x-25)(x+20)=0 \\implies x=25$. Attended = $25-5 = 20$."
+    },
+    {
+      "module": 1,
+      "question": "A box contains $385$ marbles. They are to be distributed among some friends such that each friend receives marbles equal to the number of friends. However, there are $24$ marbles left. How many friends are there?",
+      "options": [
+        "18",
+        "19",
+        "17",
+        "21"
+      ],
+      "correct_answer": "19",
+      "explanation": "Let $n$ be number of friends. Each gets $n$ marbles. Total used = $n^2$. $n^2 + 24 = 385 \\implies n^2 = 361 \\implies n = 19$."
+    },
+    {
+      "module": 1,
+      "question": "A basket contains $200$ oranges. They are distributed among $25$ friends equally. Had there been $5$ more friends each would have received one orange less. How many friends were there?",
+      "options": [
+        "20",
+        "25",
+        "30",
+        "None"
+      ],
+      "correct_answer": "20",
+      "explanation": "Let there be $x$ friends originally. $200/x - 200/(x+5) = 1 \\implies x^2 + 5x - 1000 = 0 \\implies (x+25)(x-20) = 0 \\implies x=20$. So $20$ friends were there originally."
+    },
+    {
+      "module": 1,
+      "question": "Which is greater among $4^{300}$ or $3^{400}$?",
+      "options": [
+        "$4^{300}$",
+        "$3^{400}$",
+        "Both are equal",
+        "None"
+      ],
+      "correct_answer": "$3^{400}$",
+      "explanation": "$4^{300} = (4^3)^{100} = 64^{100}$. $3^{400} = (3^4)^{100} = 81^{100}$. Since $81 > 64$, $3^{400} > 4^{300}$."
+    },
+    {
+      "module": 1,
+      "question": "For a Natural Number $n$, $n^4 + n^2 + 1$ is",
+      "options": [
+        "Odd",
+        "Even",
+        "Either even or odd",
+        "None"
+      ],
+      "correct_answer": "Odd",
+      "explanation": "If $n$ is even, $n^4$ and $n^2$ are even, sum + $1$ is Odd. If $n$ is odd, $n^4$ and $n^2$ are odd, odd+odd+1 = even+1 = Odd. Always Odd."
+    },
+    {
+      "module": 1,
+      "question": "By what smallest number must $21600$ be multiplied or divided in order to make it a perfect square?",
+      "options": [
+        "6",
+        "5",
+        "8",
+        "10"
+      ],
+      "correct_answer": "6",
+      "explanation": "$21600 = 216 \\times 100 = 6^3 \\times 10^2 = 2^3 \\times 3^3 \\times 10^2$. Powers: $2^3$ (odd), $3^3$ (odd). Need one more $2$ and one more $3$ to make powers even. Factor needed = $2 \\times 3 = 6$."
+    },
+    {
+      "module": 1,
+      "question": "Dividing by $3/8$ then multiplying by $5/6$ is equivalent to dividing by",
+      "options": [
+        "$5/16$",
+        "$16/40$",
+        "$9/20$",
+        "$40/18$"
+      ],
+      "correct_answer": "$9/20$",
+      "explanation": "Operation: $x / (3/8) \\times (5/6) = x \\times (8/3) \\times (5/6) = x \\times (40/18) = x \\times (20/9)$. This is equivalent to dividing by $9/20$."
+    },
+    {
+      "module": 1,
+      "question": "If $32^{x-2} = 64/8^x$ Find the value of $x$",
+      "options": [
+        "$-2$",
+        "$3$",
+        "$2$",
+        "$-3$"
+      ],
+      "correct_answer": "$2$",
+      "explanation": "$(2^5)^{x-2} = (2^6) / (2^3)^x \\implies 2^{5x-10} = 2^{6-3x} \\implies 5x - 10 = 6 - 3x \\implies 8x = 16 \\implies x = 2$."
+    },
+    {
+      "module": 1,
+      "question": "A call center agent has a list of $305$ phone numbers of people in alphabetic order of names (but she does not have any of the names). She needs to quickly contact Deepak Sharma to convey a message to him. If each call takes $2$ minutes to complete, and every call is answered, what is the minimum amount of time in which she can guarantee to deliver the message to Deepak Sharma?",
+      "options": [
+        "18 minutes",
+        "206 minutes",
+        "610 minutes",
+        "9 minutes"
+      ],
+      "correct_answer": "18 minutes",
+      "explanation": "This is a binary search problem. $\\log_2(305)$ is approx $8.25$. So $9$ calls are needed in the worst case. $9 \\times 2$ minutes = $18$ minutes."
+    }
+  ]
+}

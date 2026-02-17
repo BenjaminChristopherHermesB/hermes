@@ -41,12 +41,17 @@ export default function AdminPage() {
         }
     };
 
+    const sanitizeJsonLatex = (text) => {
+        return text.replace(/\\(?!["\\/bfnrtu])/g, "\\\\");
+    };
+
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         try {
-            const text = await file.text();
+            const raw = await file.text();
+            const text = sanitizeJsonLatex(raw);
             const data = JSON.parse(text);
 
             if (!data.subject || !data.questions) {
@@ -59,7 +64,8 @@ export default function AdminPage() {
             fetchData();
         } catch (err) {
             if (err.response?.data?.requiresMerge) {
-                const text = await file.text();
+                const raw = await file.text();
+                const text = sanitizeJsonLatex(raw);
                 const data = JSON.parse(text);
                 setMergeConflict(err.response.data);
                 setPendingUpload(data);
