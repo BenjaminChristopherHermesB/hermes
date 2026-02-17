@@ -1,0 +1,149 @@
+{
+    "subject": "Data Structures",
+    "questions": [
+        {
+            "question": "What is the time complexity of binary search?",
+            "options": [
+                "O(n)",
+                "O(log n)",
+                "O(n log n)",
+                "O(1)"
+            ],
+            "correct_answer": "O(log n)",
+            "explanation": "Binary search halves the search space at each step, resulting in logarithmic time complexity.",
+            "module": 1
+        },
+        {
+            "question": "Which data structure uses FIFO (First In, First Out) ordering?",
+            "options": [
+                "Stack",
+                "Queue",
+                "Array",
+                "Tree"
+            ],
+            "correct_answer": "Queue",
+            "explanation": "A queue follows FIFO ordering where the first element added is the first one removed.",
+            "module": 1
+        },
+        {
+            "question": "What is the worst-case time complexity of inserting an element at the beginning of an array?",
+            "options": [
+                "O(1)",
+                "O(log n)",
+                "O(n)",
+                "O(n^2)"
+            ],
+            "correct_answer": "O(n)",
+            "explanation": "Inserting at the beginning requires shifting all existing elements one position to the right.",
+            "module": 1
+        },
+        {
+            "question": "Which of the following is NOT a type of linked list?",
+            "options": [
+                "Singly Linked List",
+                "Doubly Linked List",
+                "Circular Linked List",
+                "Parallel Linked List"
+            ],
+            "correct_answer": "Parallel Linked List",
+            "explanation": "Parallel Linked List is not a standard linked list type. The standard types are singly, doubly, and circular linked lists.",
+            "module": 2
+        },
+        {
+            "question": "What is the maximum number of children a node can have in a binary tree?",
+            "options": [
+                "1",
+                "2",
+                "3",
+                "Unlimited"
+            ],
+            "correct_answer": "2",
+            "explanation": "By definition, each node in a binary tree can have at most two children (left and right).",
+            "module": 2
+        },
+        {
+            "question": "Which traversal visits the root node first, then left subtree, then right subtree?",
+            "options": [
+                "Inorder",
+                "Preorder",
+                "Postorder",
+                "Level order"
+            ],
+            "correct_answer": "Preorder",
+            "explanation": "Preorder traversal follows: Root -> Left -> Right.",
+            "module": 3
+        },
+        {
+            "question": "A hash table with a good hash function has an average-case lookup time complexity of:",
+            "options": [
+                "O(n)",
+                "O(log n)",
+                "O(1)",
+                "O(n log n)"
+            ],
+            "correct_answer": "O(1)",
+            "explanation": "With a good hash function and low collision rate, hash table lookups are O(1) on average.",
+            "module": 3
+        },
+        {
+            "question": "Which data structure is used in BFS (Breadth-First Search)?",
+            "options": [
+                "Stack",
+                "Queue",
+                "Priority Queue",
+                "Linked List"
+            ],
+            "correct_answer": "Queue",
+            "explanation": "BFS uses a queue to explore nodes level by level in a graph or tree.",
+            "module": 4
+        },
+        {
+            "question": "What is the space complexity of a recursive function with depth d?",
+            "options": [
+                "O(1)",
+                "O(d)",
+                "O(n)",
+                "O(d^2)"
+            ],
+            "correct_answer": "O(d)",
+            "explanation": "Each recursive call adds a frame to the call stack, so space complexity is proportional to the maximum depth.",
+            "module": 4
+        },
+        {
+            "question": "Which sorting algorithm has the best average-case time complexity?",
+            "options": [
+                "Bubble Sort",
+                "Selection Sort",
+                "Merge Sort",
+                "Insertion Sort"
+            ],
+            "correct_answer": "Merge Sort",
+            "explanation": "Merge Sort has O(n log n) average-case complexity, which is better than the O(n^2) of Bubble, Selection, and Insertion sorts.",
+            "module": 5
+        },
+        {
+            "question": "What is a complete binary tree?",
+            "options": [
+                "Every node has exactly two children",
+                "All levels are fully filled except possibly the last, which is filled from left to right",
+                "All leaves are at the same level",
+                "The tree has the minimum possible height"
+            ],
+            "correct_answer": "All levels are fully filled except possibly the last, which is filled from left to right",
+            "explanation": "A complete binary tree fills each level left to right, with all levels full except possibly the last.",
+            "module": 5
+        },
+        {
+            "question": "Which data structure is best for implementing an undo feature?",
+            "options": [
+                "Queue",
+                "Stack",
+                "Array",
+                "Hash Map"
+            ],
+            "correct_answer": "Stack",
+            "explanation": "A stack's LIFO (Last In, First Out) property is ideal for undo operations, where the most recent action is undone first.",
+            "module": 1
+        }
+    ]
+}
