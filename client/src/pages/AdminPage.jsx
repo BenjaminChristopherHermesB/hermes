@@ -88,6 +88,7 @@ export default function AdminPage() {
             setUploadStatus({ type: "success", message: merge ? `Merged! Inserted: ${res.data.inserted}, Duplicates: ${res.data.duplicates}` : "Upload skipped." });
             fetchData();
         } catch (err) {
+            console.error("Merge error:", err);
             setUploadStatus({ type: "error", message: err.response?.data?.error || "Operation failed" });
         }
         setMergeConflict(null);
@@ -104,6 +105,7 @@ export default function AdminPage() {
                 await api.put(`/admin/users/${userId}/role`, { role: newRole });
                 setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
             } catch (err) {
+                console.error("Role change error:", err);
                 alert(err.response?.data?.error || "Failed to update role");
             }
         });
@@ -117,6 +119,7 @@ export default function AdminPage() {
             setNewPassword("");
             alert("Password reset successfully");
         } catch (err) {
+            console.error("Password reset error:", err);
             alert(err.response?.data?.error || "Failed to reset password");
         }
     };
@@ -127,6 +130,7 @@ export default function AdminPage() {
                 await api.delete(`/admin/subjects/${subjectId}`);
                 fetchData();
             } catch (err) {
+                console.error("Delete subject error:", err);
                 alert(err.response?.data?.error || "Failed to delete subject");
             }
         });
@@ -144,6 +148,7 @@ export default function AdminPage() {
             a.click();
             URL.revokeObjectURL(url);
         } catch (err) {
+            console.error("Export error:", err);
             alert("Export failed");
         }
     };
@@ -154,6 +159,7 @@ export default function AdminPage() {
                 await api.delete(`/admin/users/${userId}`);
                 setUsers((prev) => prev.filter((u) => u.id !== userId));
             } catch (err) {
+                console.error("Delete user error:", err);
                 alert(err.response?.data?.error || "Failed to delete user");
             }
         });
@@ -163,9 +169,10 @@ export default function AdminPage() {
         const action = currentApproved ? "revoke access for" : "approve";
         showConfirm(currentApproved ? "Revoke Access" : "Approve User", `Are you sure you want to ${action} this user?`, async () => {
             try {
-                const res = await api.put(`/admin/users/${userId}/approve`);
+                const res = await api.put(`/admin/users/${userId}/approve`, { approved: !currentApproved });
                 setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approved: res.data.approved } : u)));
             } catch (err) {
+                console.error("Approve toggle error:", err);
                 alert(err.response?.data?.error || "Failed to update approval");
             }
         });
@@ -175,9 +182,10 @@ export default function AdminPage() {
         const action = currentBanned ? "unban" : "ban";
         showConfirm(currentBanned ? "Unban User" : "Ban User", `Are you sure you want to ${action} this user?`, async () => {
             try {
-                const res = await api.put(`/admin/users/${userId}/ban`);
+                const res = await api.put(`/admin/users/${userId}/ban`, { banned: !currentBanned });
                 setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, banned: res.data.banned } : u)));
             } catch (err) {
+                console.error("Ban toggle error:", err);
                 alert(err.response?.data?.error || "Failed to update ban status");
             }
         });
@@ -192,6 +200,7 @@ export default function AdminPage() {
             setCreateForm({ username: "", password: "", name: "", role: "user" });
             alert("User created successfully");
         } catch (err) {
+            console.error("Create user error:", err);
             alert(err.response?.data?.error || "Failed to create user");
         }
     };
