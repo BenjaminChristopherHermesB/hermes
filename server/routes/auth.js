@@ -40,8 +40,8 @@ router.post("/register", authLimiter, async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         const result = await pool.query(
-            "INSERT INTO users (username, password_hash, name, ip_address) VALUES ($1, $2, $3, $4) RETURNING id, username, name, role",
-            [username, passwordHash, name, clientIp]
+            "INSERT INTO users (username, password_hash, name, ip_address, approved) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, name, role, approved",
+            [username, passwordHash, name, clientIp, false]
         );
 
         const user = result.rows[0];
@@ -55,7 +55,7 @@ router.post("/register", authLimiter, async (req, res) => {
         );
 
         res.status(201).json({
-            user: { id: user.id, username: user.username, name: user.name, role: user.role },
+            user: { id: user.id, username: user.username, name: user.name, role: user.role, approved: user.approved },
             accessToken,
             refreshToken,
         });
@@ -79,6 +79,11 @@ router.post("/login", authLimiter, async (req, res) => {
         }
 
         const user = result.rows[0];
+
+        if (user.banned) {
+            return res.status(403).json({ error: "Your account has been banned. Contact an admin for assistance.", code: "BANNED" });
+        }
+
         const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) {
             return res.status(401).json({ error: "Invalid username or password" });
@@ -102,6 +107,7 @@ router.post("/login", authLimiter, async (req, res) => {
                 username: user.username,
                 name: user.name,
                 role: user.role,
+                approved: user.approved,
                 theme_preference: user.theme_preference,
             },
             accessToken,
@@ -135,6 +141,12 @@ router.post("/refresh", async (req, res) => {
         }
 
         const user = userResult.rows[0];
+
+        if (user.banned) {
+            await pool.query("DELETE FROM refresh_tokens WHERE user_id = $1", [user.id]);
+            return res.status(403).json({ error: "Account has been banned", code: "BANNED" });
+        }
+
         const newAccessToken = generateAccessToken(user);
 
         res.json({ accessToken: newAccessToken });

@@ -1,10 +1,12 @@
 const express = require("express");
 const pool = require("../config/db");
 const auth = require("../middleware/auth");
+const approved = require("../middleware/approved");
 
 const router = express.Router();
 
 router.use(auth);
+router.use(approved);
 
 router.get("/", async (req, res) => {
     try {

@@ -39,9 +39,16 @@ export default function QuizReviewPage() {
 
     if (!reviewData) return null;
 
-    const { session, answers } = reviewData;
+    const { session, answers, totalTimeTaken, avgTimePerQuestion } = reviewData;
     const filtered = filter === "all" ? answers : filter === "correct" ? answers.filter((a) => a.is_correct) : answers.filter((a) => !a.is_correct);
     const score = Math.round((session.correct_count / session.total_questions) * 100);
+
+    const formatTime = (seconds) => {
+        if (!seconds) return "";
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, "0")}`;
+    };
 
     return (
         <div className="review-page">
@@ -54,6 +61,12 @@ export default function QuizReviewPage() {
                 <div className="review-score-badge" style={{ background: score >= 70 ? "var(--md-success)" : score >= 40 ? "var(--md-warning)" : "var(--md-error)" }}>
                     {score}%
                 </div>
+                {totalTimeTaken > 0 && (
+                    <div className="review-time-stats">
+                        <span className="material-icons-outlined" style={{ fontSize: "16px" }}>schedule</span>
+                        {formatTime(totalTimeTaken)} total · {avgTimePerQuestion}s avg
+                    </div>
+                )}
             </div>
 
             <div className="review-filters">
@@ -80,6 +93,12 @@ export default function QuizReviewPage() {
                                 <span className="material-icons-outlined status-icon">{answer.is_correct ? "check_circle" : "cancel"}</span>
                                 {answer.is_correct ? "Correct" : "Wrong"}
                             </span>
+                            {answer.time_taken > 0 && (
+                                <span className="review-time-badge">
+                                    <span className="material-icons-outlined" style={{ fontSize: "14px" }}>timer</span>
+                                    {answer.time_taken}s
+                                </span>
+                            )}
                         </div>
                         <p className="review-question-text"><Latex>{answer.question}</Latex></p>
                         <div className="review-options">

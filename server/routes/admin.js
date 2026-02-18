@@ -12,7 +12,7 @@ router.use(admin);
 router.get("/users", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT id, username, name, role, ip_address, theme_preference, created_at FROM users ORDER BY created_at DESC"
+            "SELECT id, username, name, role, approved, banned, ip_address, theme_preference, created_at FROM users ORDER BY created_at DESC"
         );
         res.json(result.rows);
     } catch (err) {
@@ -31,7 +31,7 @@ router.put("/users/:id/role", async (req, res) => {
         }
 
         const result = await pool.query(
-            "UPDATE users SET role = $1 WHERE id = $2 RETURNING id, username, name, role",
+            "UPDATE users SET role = $1 WHERE id = $2 RETURNING id, username, name, role, approved, banned",
             [role, id]
         );
 
@@ -42,6 +42,92 @@ router.put("/users/:id/role", async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         console.error("Update role error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.put("/users/:id/approve", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approved } = req.body;
+
+        const result = await pool.query(
+            "UPDATE users SET approved = $1 WHERE id = $2 RETURNING id, username, name, role, approved, banned",
+            [!!approved, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Update approval error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.put("/users/:id/ban", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { banned } = req.body;
+
+        if (parseInt(id) === req.user.id) {
+            return res.status(400).json({ error: "Cannot ban your own account" });
+        }
+
+        const result = await pool.query(
+            "UPDATE users SET banned = $1 WHERE id = $2 RETURNING id, username, name, role, approved, banned",
+            [!!banned, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        if (banned) {
+            await pool.query("DELETE FROM refresh_tokens WHERE user_id = $1", [id]);
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("Update ban error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.post("/users/create", async (req, res) => {
+    try {
+        const { username, password, name, role } = req.body;
+
+        if (!username || !password || !name) {
+            return res.status(400).json({ error: "Username, password, and name are required" });
+        }
+        if (username.length < 3 || username.length > 50) {
+            return res.status(400).json({ error: "Username must be 3-50 characters" });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters" });
+        }
+
+        const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
+        if (existing.rows.length > 0) {
+            return res.status(409).json({ error: "Username already taken" });
+        }
+
+        const salt = await bcrypt.genSalt(12);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const userRole = role === "admin" ? "admin" : "user";
+
+        const result = await pool.query(
+            "INSERT INTO users (username, password_hash, name, role, approved) VALUES ($1, $2, $3, $4, TRUE) RETURNING id, username, name, role, approved, banned, created_at",
+            [username, passwordHash, name, userRole]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error("Create user error:", err);
         res.status(500).json({ error: "Server error" });
     }
 });
@@ -229,12 +315,16 @@ router.delete("/quizzes/:id", async (req, res) => {
 router.get("/stats", async (req, res) => {
     try {
         const users = await pool.query("SELECT COUNT(*) FROM users");
+        const pendingUsers = await pool.query("SELECT COUNT(*) FROM users WHERE approved = FALSE AND banned = FALSE");
+        const bannedUsers = await pool.query("SELECT COUNT(*) FROM users WHERE banned = TRUE");
         const subjects = await pool.query("SELECT COUNT(*) FROM subjects");
         const questions = await pool.query("SELECT COUNT(*) FROM questions");
         const quizzes = await pool.query("SELECT COUNT(*) FROM quiz_sessions");
 
         res.json({
             totalUsers: parseInt(users.rows[0].count),
+            pendingUsers: parseInt(pendingUsers.rows[0].count),
+            bannedUsers: parseInt(bannedUsers.rows[0].count),
             totalSubjects: parseInt(subjects.rows[0].count),
             totalQuestions: parseInt(questions.rows[0].count),
             totalQuizzes: parseInt(quizzes.rows[0].count),

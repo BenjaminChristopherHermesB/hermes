@@ -453,6 +453,58 @@
     animation: spin 0.8s linear infinite;
 }
 
+.pending-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--md-surface-container);
+    border: 1px solid var(--md-outline-variant);
+    border-radius: var(--md-radius-lg);
+    margin-bottom: 2rem;
+}
+
+.pending-icon {
+    font-size: 36px;
+    color: var(--md-warning);
+    flex-shrink: 0;
+}
+
+.pending-content h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--md-on-surface);
+    margin-bottom: 0.375rem;
+}
+
+.pending-content p {
+    font-size: 0.875rem;
+    color: var(--md-on-surface-variant);
+    line-height: 1.5;
+}
+
+.practice-mistakes-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    border-radius: var(--md-radius-md);
+    background: var(--md-error-container);
+    color: var(--md-on-error-container);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: all var(--transition-fast);
+}
+
+.practice-mistakes-btn:hover {
+    box-shadow: var(--md-shadow);
+    filter: brightness(1.1);
+}
+
 @media (max-width: 768px) {
     .dashboard-header {
         padding: 0.625rem 1rem;

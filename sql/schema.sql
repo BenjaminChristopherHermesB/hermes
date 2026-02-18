@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(100) NOT NULL,
   role VARCHAR(10) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  approved BOOLEAN DEFAULT FALSE,
+  banned BOOLEAN DEFAULT FALSE,
   ip_address VARCHAR(45),
   theme_preference VARCHAR(10) DEFAULT 'dark' CHECK (theme_preference IN ('dark', 'light')),
   created_at TIMESTAMP DEFAULT NOW()
@@ -57,6 +59,7 @@ CREATE TABLE IF NOT EXISTS quiz_answers (
   question_id INT REFERENCES questions(id) ON DELETE CASCADE,
   selected_answer VARCHAR(500),
   is_correct BOOLEAN NOT NULL,
+  time_taken INT,
   answered_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -77,3 +80,5 @@ CREATE INDEX idx_user_question_stats_user ON user_question_stats(user_id);
 CREATE INDEX idx_user_question_stats_question ON user_question_stats(question_id);
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_users_approved ON users(approved);
+CREATE INDEX idx_users_banned ON users(banned);

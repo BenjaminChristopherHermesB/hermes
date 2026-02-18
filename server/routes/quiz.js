@@ -1,10 +1,12 @@
 const express = require("express");
 const pool = require("../config/db");
 const auth = require("../middleware/auth");
+const approved = require("../middleware/approved");
 
 const router = express.Router();
 
 router.use(auth);
+router.use(approved);
 
 router.post("/start", async (req, res) => {
     try {
@@ -74,9 +76,84 @@ router.post("/start", async (req, res) => {
     }
 });
 
+router.post("/start-wrong", async (req, res) => {
+    try {
+        const { subjectId, isTimed, timerMode, timePerQuestion, totalTime, showFeedback } = req.body;
+
+        if (!subjectId) {
+            return res.status(400).json({ error: "Subject ID is required" });
+        }
+
+        const wrongQuestions = await pool.query(
+            `SELECT DISTINCT q.id, q.question, q.options, q.module
+       FROM questions q
+       JOIN user_question_stats uqs ON q.id = uqs.question_id AND uqs.user_id = $1
+       WHERE q.subject_id = $2
+         AND uqs.times_attempted > uqs.times_correct
+       ORDER BY RANDOM()
+       LIMIT 100`,
+            [req.user.id, subjectId]
+        );
+
+        if (wrongQuestions.rows.length === 0) {
+            return res.status(404).json({ error: "No wrong questions found for this subject" });
+        }
+
+        const actualCount = wrongQuestions.rows.length;
+        const effectiveTimePerQuestion = timerMode === "per-question" ? timePerQuestion : null;
+
+        const session = await pool.query(
+            `INSERT INTO quiz_sessions (user_id, subject_id, total_questions, is_timed, time_per_question)
+      VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [req.user.id, subjectId, actualCount, !!isTimed, effectiveTimePerQuestion]
+        );
+
+        const questions = wrongQuestions.rows.map((q) => ({
+            id: q.id,
+            question: q.question,
+            options: q.options,
+            module: q.module,
+        }));
+
+        const computedTotalTime = timerMode === "block" ? totalTime : null;
+
+        res.json({
+            sessionId: session.rows[0].id,
+            totalQuestions: actualCount,
+            isTimed: !!isTimed,
+            timerMode: isTimed ? (timerMode || "per-question") : null,
+            timePerQuestion: effectiveTimePerQuestion,
+            totalTime: computedTotalTime,
+            showFeedback: showFeedback !== false,
+            questions,
+        });
+    } catch (err) {
+        console.error("Start wrong quiz error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/wrong-count/:subjectId", async (req, res) => {
+    try {
+        const { subjectId } = req.params;
+        const result = await pool.query(
+            `SELECT COUNT(DISTINCT q.id) AS count
+       FROM questions q
+       JOIN user_question_stats uqs ON q.id = uqs.question_id AND uqs.user_id = $1
+       WHERE q.subject_id = $2
+         AND uqs.times_attempted > uqs.times_correct`,
+            [req.user.id, subjectId]
+        );
+        res.json({ count: parseInt(result.rows[0].count) });
+    } catch (err) {
+        console.error("Wrong count error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 router.post("/submit", async (req, res) => {
     try {
-        const { sessionId, questionId, selectedAnswer, showFeedback } = req.body;
+        const { sessionId, questionId, selectedAnswer, showFeedback, timeTaken } = req.body;
 
         if (!sessionId || !questionId) {
             return res.status(400).json({ error: "Session ID and question ID are required" });
@@ -111,8 +188,8 @@ router.post("/submit", async (req, res) => {
         if (existing.rows.length > 0) {
             const wasCorrect = existing.rows[0].is_correct;
             await pool.query(
-                "UPDATE quiz_answers SET selected_answer = $1, is_correct = $2, answered_at = NOW() WHERE id = $3",
-                [selectedAnswer || null, isCorrect, existing.rows[0].id]
+                "UPDATE quiz_answers SET selected_answer = $1, is_correct = $2, time_taken = $3, answered_at = NOW() WHERE id = $4",
+                [selectedAnswer || null, isCorrect, timeTaken || null, existing.rows[0].id]
             );
 
             if (wasCorrect && !isCorrect) {
@@ -128,8 +205,8 @@ router.post("/submit", async (req, res) => {
             }
         } else {
             await pool.query(
-                "INSERT INTO quiz_answers (session_id, question_id, selected_answer, is_correct) VALUES ($1, $2, $3, $4)",
-                [sessionId, questionId, selectedAnswer || null, isCorrect]
+                "INSERT INTO quiz_answers (session_id, question_id, selected_answer, is_correct, time_taken) VALUES ($1, $2, $3, $4, $5)",
+                [sessionId, questionId, selectedAnswer || null, isCorrect, timeTaken || null]
             );
 
             if (isCorrect) {
@@ -183,12 +260,19 @@ router.post("/complete", async (req, res) => {
 
         const session = result.rows[0];
 
+        const timeResult = await pool.query(
+            "SELECT COALESCE(SUM(time_taken), 0) AS total_time, COALESCE(AVG(time_taken), 0) AS avg_time FROM quiz_answers WHERE session_id = $1 AND time_taken IS NOT NULL",
+            [sessionId]
+        );
+
         res.json({
             sessionId: session.id,
             totalQuestions: session.total_questions,
             correctCount: session.correct_count,
             score: Math.round((session.correct_count / session.total_questions) * 100),
             completedAt: session.completed_at,
+            totalTimeTaken: parseInt(timeResult.rows[0].total_time),
+            avgTimePerQuestion: Math.round(parseFloat(timeResult.rows[0].avg_time)),
         });
     } catch (err) {
         console.error("Complete quiz error:", err);
@@ -218,9 +302,16 @@ router.get("/review/:sessionId", async (req, res) => {
             [sessionId]
         );
 
+        const timeResult = await pool.query(
+            "SELECT COALESCE(SUM(time_taken), 0) AS total_time, COALESCE(AVG(time_taken), 0) AS avg_time FROM quiz_answers WHERE session_id = $1 AND time_taken IS NOT NULL",
+            [sessionId]
+        );
+
         res.json({
             session: session.rows[0],
             answers: answers.rows,
+            totalTimeTaken: parseInt(timeResult.rows[0].total_time),
+            avgTimePerQuestion: Math.round(parseFloat(timeResult.rows[0].avg_time)),
         });
     } catch (err) {
         console.error("Review quiz error:", err);

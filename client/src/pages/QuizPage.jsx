@@ -22,6 +22,7 @@ export default function QuizPage() {
     const [showTimeUpModal, setShowTimeUpModal] = useState(false);
     const timerRef = useRef(null);
     const timeUpProcessedRef = useRef(false);
+    const questionStartRef = useRef(Date.now());
 
     const showFeedback = sessionData?.showFeedback !== false;
     const isBlockTimer = sessionData?.timerMode === "block";
@@ -32,6 +33,10 @@ export default function QuizPage() {
             navigate("/dashboard");
         }
     }, [sessionData, navigate]);
+
+    useEffect(() => {
+        questionStartRef.current = Date.now();
+    }, [currentIndex]);
 
     useEffect(() => {
         if (!sessionData?.isTimed || completed) return;
@@ -80,12 +85,15 @@ export default function QuizPage() {
         setSubmitting(true);
         if (isPerQuestionTimer) clearInterval(timerRef.current);
 
+        const timeTaken = Math.round((Date.now() - questionStartRef.current) / 1000);
+
         try {
             const res = await api.post("/quiz/submit", {
                 sessionId: sessionData.sessionId,
                 questionId: q.id,
                 selectedAnswer: answer,
                 showFeedback,
+                timeTaken,
             });
 
             setSelectedAnswers((prev) => ({ ...prev, [qIndex]: answer }));
@@ -261,6 +269,18 @@ export default function QuizPage() {
                             <span className="result-stat-value">{results?.totalQuestions || sessionData.totalQuestions}</span>
                             <span className="result-stat-label">Total</span>
                         </div>
+                        {results?.totalTimeTaken > 0 && (
+                            <div className="result-stat">
+                                <span className="result-stat-value">{formatTime(results.totalTimeTaken)}</span>
+                                <span className="result-stat-label">Time</span>
+                            </div>
+                        )}
+                        {results?.avgTimePerQuestion > 0 && (
+                            <div className="result-stat">
+                                <span className="result-stat-value">{results.avgTimePerQuestion}s</span>
+                                <span className="result-stat-label">Avg/Q</span>
+                            </div>
+                        )}
                     </div>
                     <div className="results-actions">
                         <button className="results-btn review" onClick={() => navigate(`/quiz/review/${sessionData.sessionId}`)}>

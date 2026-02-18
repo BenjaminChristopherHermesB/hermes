@@ -235,6 +235,30 @@
     color: var(--md-warning);
 }
 
+.review-time-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--md-on-surface-variant);
+    padding: 0.25rem 0.75rem;
+    background: var(--md-surface-container);
+    border-radius: var(--md-radius-full);
+}
+
+.review-time-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--md-on-surface-variant);
+    padding: 0.125rem 0.5rem;
+    background: var(--md-surface-container);
+    border-radius: var(--md-radius-full);
+}
+
 @media (max-width: 768px) {
     .review-header {
         padding: 0.625rem 1rem;

@@ -20,7 +20,11 @@ export default function LoginPage() {
             await login(username, password, stayLoggedIn);
             navigate("/dashboard");
         } catch (err) {
-            setError(err.response?.data?.error || "Login failed. Please try again.");
+            if (err.response?.data?.code === "BANNED") {
+                setError("Your account has been banned. Contact an admin for assistance.");
+            } else {
+                setError(err.response?.data?.error || "Login failed. Please try again.");
+            }
         } finally {
             setLoading(false);
         }

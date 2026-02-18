@@ -18,15 +18,31 @@ export default function DashboardPage() {
     const [timePerQuestion, setTimePerQuestion] = useState(60);
     const [minutesPerQuestion, setMinutesPerQuestion] = useState(1);
     const [showFeedback, setShowFeedback] = useState(true);
+    const [wrongCounts, setWrongCounts] = useState({});
+    const [quizMode, setQuizMode] = useState("normal");
+
+    const isApproved = user?.approved !== false;
 
     useEffect(() => {
-        fetchSubjects();
-    }, []);
+        if (isApproved) {
+            fetchSubjects();
+        } else {
+            setLoading(false);
+        }
+    }, [isApproved]);
 
     const fetchSubjects = async () => {
         try {
             const res = await api.get("/subjects");
             setSubjects(res.data);
+            const counts = {};
+            for (const s of res.data) {
+                try {
+                    const wr = await api.get(`/quiz/wrong-count/${s.id}`);
+                    counts[s.id] = wr.data.count;
+                } catch { counts[s.id] = 0; }
+            }
+            setWrongCounts(counts);
         } catch (err) {
             console.error("Failed to fetch subjects:", err);
         } finally {
@@ -38,19 +54,26 @@ export default function DashboardPage() {
         if (!quizSetup) return;
         try {
             const totalTime = timerMode === "block" ? Math.round(minutesPerQuestion * questionCount * 60) : null;
-            const res = await api.post("/quiz/start", {
+            const endpoint = quizMode === "wrong" ? "/quiz/start-wrong" : "/quiz/start";
+            const payload = {
                 subjectId: quizSetup.id,
-                questionCount,
                 isTimed,
                 timerMode: isTimed ? timerMode : null,
                 timePerQuestion: isTimed && timerMode === "per-question" ? timePerQuestion : null,
                 totalTime: isTimed && timerMode === "block" ? totalTime : null,
                 showFeedback,
-            });
+            };
+            if (quizMode === "normal") payload.questionCount = questionCount;
+            const res = await api.post(endpoint, payload);
             navigate(`/quiz/${quizSetup.id}`, { state: { ...res.data, showFeedback } });
         } catch (err) {
             alert(err.response?.data?.error || "Failed to start quiz");
         }
+    };
+
+    const openQuizModal = (subject, mode = "normal") => {
+        setQuizMode(mode);
+        setQuizSetup(subject);
     };
 
     const handleLogout = async () => {
@@ -88,7 +111,15 @@ export default function DashboardPage() {
                     <p className="greeting-sub">Ready to challenge yourself today?</p>
                 </section>
 
-                {loading ? (
+                {!isApproved ? (
+                    <div className="pending-banner fade-in">
+                        <span className="material-icons-outlined pending-icon">hourglass_top</span>
+                        <div className="pending-content">
+                            <h3>Account Pending Approval</h3>
+                            <p>Your account is awaiting admin approval. You'll be able to access quizzes once an admin approves your account.</p>
+                        </div>
+                    </div>
+                ) : loading ? (
                     <div className="loading-container">
                         <div className="skeleton-grid">
                             {[1, 2, 3].map((i) => (
@@ -109,14 +140,13 @@ export default function DashboardPage() {
                                 key={subject.id}
                                 className="subject-card slide-up"
                                 style={{ animationDelay: `${index * 0.08}s` }}
-                                onClick={() => setQuizSetup(subject)}
                             >
-                                <div className="subject-card-header">
+                                <div className="subject-card-header" onClick={() => openQuizModal(subject)}>
                                     <span className="material-icons-outlined subject-icon">auto_stories</span>
                                     <div className="subject-modules">{subject.module_count} modules</div>
                                 </div>
-                                <h3 className="subject-name">{subject.name}</h3>
-                                <div className="subject-stats">
+                                <h3 className="subject-name" onClick={() => openQuizModal(subject)}>{subject.name}</h3>
+                                <div className="subject-stats" onClick={() => openQuizModal(subject)}>
                                     <div className="stat">
                                         <span className="stat-value">{subject.question_count}</span>
                                         <span className="stat-label">Questions</span>
@@ -130,12 +160,21 @@ export default function DashboardPage() {
                                         <span className="stat-label">Mastered</span>
                                     </div>
                                 </div>
-                                <div className="subject-progress-bar">
+                                <div className="subject-progress-bar" onClick={() => openQuizModal(subject)}>
                                     <div
                                         className="subject-progress-fill"
                                         style={{ width: `${subject.question_count > 0 ? (subject.mastered / subject.question_count) * 100 : 0}%` }}
                                     />
                                 </div>
+                                {wrongCounts[subject.id] > 0 && (
+                                    <button
+                                        className="practice-mistakes-btn"
+                                        onClick={(e) => { e.stopPropagation(); openQuizModal(subject, "wrong"); }}
+                                    >
+                                        <span className="material-icons-outlined" style={{ fontSize: "16px" }}>replay</span>
+                                        Practice Mistakes ({wrongCounts[subject.id]})
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </section>
@@ -145,24 +184,35 @@ export default function DashboardPage() {
             {quizSetup && (
                 <div className="modal-overlay" onClick={() => setQuizSetup(null)}>
                     <div className="modal scale-in" onClick={(e) => e.stopPropagation()}>
-                        <h2 className="modal-title">Start Quiz</h2>
+                        <h2 className="modal-title">
+                            {quizMode === "wrong" ? "Practice Mistakes" : "Start Quiz"}
+                        </h2>
                         <p className="modal-subtitle">{quizSetup.name}</p>
 
-                        <div className="modal-field">
-                            <label>Number of Questions: <strong>{questionCount}</strong></label>
-                            <input
-                                type="range"
-                                min="10"
-                                max={Math.min(100, quizSetup.question_count)}
-                                value={questionCount}
-                                onChange={(e) => setQuestionCount(parseInt(e.target.value))}
-                                className="range-slider"
-                            />
-                            <div className="range-labels">
-                                <span>10</span>
-                                <span>{Math.min(100, quizSetup.question_count)}</span>
+                        {quizMode === "wrong" ? (
+                            <div className="modal-field">
+                                <p style={{ color: "var(--md-on-surface-variant)", fontSize: "0.875rem" }}>
+                                    <span className="material-icons-outlined" style={{ fontSize: "16px", verticalAlign: "middle", marginRight: "0.375rem" }}>replay</span>
+                                    You have <strong style={{ color: "var(--md-primary)" }}>{wrongCounts[quizSetup.id]}</strong> questions to retry.
+                                </p>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="modal-field">
+                                <label>Number of Questions: <strong>{questionCount}</strong></label>
+                                <input
+                                    type="range"
+                                    min="10"
+                                    max={Math.min(100, quizSetup.question_count)}
+                                    value={questionCount}
+                                    onChange={(e) => setQuestionCount(parseInt(e.target.value))}
+                                    className="range-slider"
+                                />
+                                <div className="range-labels">
+                                    <span>10</span>
+                                    <span>{Math.min(100, quizSetup.question_count)}</span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="modal-field">
                             <label className="toggle-label" onClick={() => setIsTimed(!isTimed)}>
@@ -227,7 +277,7 @@ export default function DashboardPage() {
                                         </div>
                                         <div className="block-timer-summary">
                                             <span className="material-icons-outlined" style={{ fontSize: "16px" }}>schedule</span>
-                                            Total: <strong>{totalBlockTime} min</strong> for {questionCount} questions
+                                            Total: <strong>{totalBlockTime} min</strong> for {quizMode === "wrong" ? wrongCounts[quizSetup.id] : questionCount} questions
                                         </div>
                                     </div>
                                 )}
@@ -246,7 +296,9 @@ export default function DashboardPage() {
 
                         <div className="modal-actions">
                             <button className="modal-btn cancel" onClick={() => setQuizSetup(null)}>Cancel</button>
-                            <button className="modal-btn start" onClick={startQuiz}>Start Quiz</button>
+                            <button className="modal-btn start" onClick={startQuiz}>
+                                {quizMode === "wrong" ? "Practice" : "Start Quiz"}
+                            </button>
                         </div>
                     </div>
                 </div>
