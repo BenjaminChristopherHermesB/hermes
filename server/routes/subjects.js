@@ -10,15 +10,33 @@ router.use(approved);
 
 router.get("/", async (req, res) => {
     try {
-        const result = await pool.query(`
-      SELECT s.id, s.name, s.created_at, s.updated_at,
-        COUNT(q.id) AS question_count,
-        COUNT(DISTINCT q.module) AS module_count
-      FROM subjects s
-      LEFT JOIN questions q ON q.subject_id = s.id
-      GROUP BY s.id
-      ORDER BY s.name
-    `);
+        let subjectQuery;
+        let queryParams;
+
+        if (req.user.subject_access_mode === "restricted") {
+            subjectQuery = `
+                SELECT s.id, s.name, s.created_at, s.updated_at,
+                    COUNT(q.id) AS question_count,
+                    COUNT(DISTINCT q.module) AS module_count
+                FROM subjects s
+                INNER JOIN subject_access sa ON sa.subject_id = s.id AND sa.user_id = $1
+                LEFT JOIN questions q ON q.subject_id = s.id
+                GROUP BY s.id
+                ORDER BY s.name`;
+            queryParams = [req.user.id];
+        } else {
+            subjectQuery = `
+                SELECT s.id, s.name, s.created_at, s.updated_at,
+                    COUNT(q.id) AS question_count,
+                    COUNT(DISTINCT q.module) AS module_count
+                FROM subjects s
+                LEFT JOIN questions q ON q.subject_id = s.id
+                GROUP BY s.id
+                ORDER BY s.name`;
+            queryParams = [];
+        }
+
+        const result = await pool.query(subjectQuery, queryParams);
 
         const subjects = result.rows.map((s) => ({
             ...s,

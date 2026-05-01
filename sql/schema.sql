@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   approved BOOLEAN DEFAULT FALSE,
   banned BOOLEAN DEFAULT FALSE,
   ip_address VARCHAR(45),
+  subject_access_mode VARCHAR(10) DEFAULT 'all',
   theme_preference VARCHAR(10) DEFAULT 'dark' CHECK (theme_preference IN ('dark', 'light')),
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -73,6 +74,15 @@ CREATE TABLE IF NOT EXISTS user_question_stats (
   UNIQUE(user_id, question_id)
 );
 
+CREATE TABLE IF NOT EXISTS subject_access (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subject_id INT NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+  granted_by INT REFERENCES users(id) ON DELETE SET NULL,
+  granted_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, subject_id)
+);
+
 CREATE INDEX idx_questions_subject ON questions(subject_id);
 CREATE INDEX idx_quiz_sessions_user ON quiz_sessions(user_id);
 CREATE INDEX idx_quiz_answers_session ON quiz_answers(session_id);
@@ -82,3 +92,5 @@ CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX idx_users_approved ON users(approved);
 CREATE INDEX idx_users_banned ON users(banned);
+CREATE INDEX idx_subject_access_user ON subject_access(user_id);
+CREATE INDEX idx_subject_access_subject ON subject_access(subject_id);

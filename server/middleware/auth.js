@@ -12,7 +12,7 @@ async function auth(req, res, next) {
         const decoded = verifyAccessToken(token);
 
         const userResult = await pool.query(
-            "SELECT id, username, name, role, approved, banned FROM users WHERE id = $1",
+            "SELECT id, username, name, role, approved, banned, subject_access_mode FROM users WHERE id = $1",
             [decoded.id]
         );
 

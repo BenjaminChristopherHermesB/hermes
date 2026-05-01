@@ -16,6 +16,16 @@ router.post("/start", async (req, res) => {
             return res.status(400).json({ error: "Subject ID and question count are required" });
         }
 
+        if (req.user.subject_access_mode === "restricted") {
+            const access = await pool.query(
+                "SELECT id FROM subject_access WHERE user_id = $1 AND subject_id = $2",
+                [req.user.id, subjectId]
+            );
+            if (access.rows.length === 0) {
+                return res.status(403).json({ error: "You don't have access to this subject", code: "SUBJECT_RESTRICTED" });
+            }
+        }
+
         const count = Math.min(Math.max(parseInt(questionCount), 10), 100);
 
         const totalAvailable = await pool.query(
@@ -82,6 +92,16 @@ router.post("/start-wrong", async (req, res) => {
 
         if (!subjectId) {
             return res.status(400).json({ error: "Subject ID is required" });
+        }
+
+        if (req.user.subject_access_mode === "restricted") {
+            const access = await pool.query(
+                "SELECT id FROM subject_access WHERE user_id = $1 AND subject_id = $2",
+                [req.user.id, subjectId]
+            );
+            if (access.rows.length === 0) {
+                return res.status(403).json({ error: "You don't have access to this subject", code: "SUBJECT_RESTRICTED" });
+            }
         }
 
         const wrongQuestions = await pool.query(

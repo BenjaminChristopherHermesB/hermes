@@ -12,7 +12,7 @@ router.use(admin);
 router.get("/users", async (req, res) => {
     try {
         const result = await pool.query(
-            "SELECT id, username, name, role, approved, banned, ip_address, theme_preference, created_at FROM users ORDER BY created_at DESC"
+            "SELECT id, username, name, role, approved, banned, ip_address, subject_access_mode, theme_preference, created_at FROM users ORDER BY created_at DESC"
         );
         res.json(result.rows);
     } catch (err) {
@@ -317,6 +317,7 @@ router.get("/stats", async (req, res) => {
         const users = await pool.query("SELECT COUNT(*) FROM users");
         const pendingUsers = await pool.query("SELECT COUNT(*) FROM users WHERE approved = FALSE AND banned = FALSE");
         const bannedUsers = await pool.query("SELECT COUNT(*) FROM users WHERE banned = TRUE");
+        const restrictedUsers = await pool.query("SELECT COUNT(*) FROM users WHERE subject_access_mode = 'restricted'");
         const subjects = await pool.query("SELECT COUNT(*) FROM subjects");
         const questions = await pool.query("SELECT COUNT(*) FROM questions");
         const quizzes = await pool.query("SELECT COUNT(*) FROM quiz_sessions");
@@ -325,12 +326,190 @@ router.get("/stats", async (req, res) => {
             totalUsers: parseInt(users.rows[0].count),
             pendingUsers: parseInt(pendingUsers.rows[0].count),
             bannedUsers: parseInt(bannedUsers.rows[0].count),
+            restrictedUsers: parseInt(restrictedUsers.rows[0].count),
             totalSubjects: parseInt(subjects.rows[0].count),
             totalQuestions: parseInt(questions.rows[0].count),
             totalQuizzes: parseInt(quizzes.rows[0].count),
         });
     } catch (err) {
         console.error("Admin stats error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/progress", async (req, res) => {
+    try {
+        const usersResult = await pool.query(
+            "SELECT id, username, name, role, subject_access_mode FROM users WHERE role != 'admin' ORDER BY name"
+        );
+        const subjectsResult = await pool.query(
+            "SELECT id, name FROM subjects ORDER BY name"
+        );
+        const questionsCountResult = await pool.query(
+            "SELECT subject_id, COUNT(*) AS total FROM questions GROUP BY subject_id"
+        );
+        const questionCounts = {};
+        questionsCountResult.rows.forEach((r) => { questionCounts[r.subject_id] = parseInt(r.total); });
+
+        const progressResult = await pool.query(
+            `SELECT
+                qs.user_id,
+                qs.subject_id,
+                COUNT(DISTINCT qa.question_id) AS seen,
+                SUM(CASE WHEN qa.is_correct THEN 1 ELSE 0 END) AS correct,
+                COUNT(qa.id) AS total_answers,
+                COUNT(DISTINCT qs.id) AS sessions,
+                MAX(qs.completed_at) AS last_active
+            FROM quiz_sessions qs
+            JOIN quiz_answers qa ON qa.session_id = qs.id
+            WHERE qs.completed_at IS NOT NULL
+            GROUP BY qs.user_id, qs.subject_id`
+        );
+
+        const progressMap = {};
+        progressResult.rows.forEach((r) => {
+            const key = `${r.user_id}_${r.subject_id}`;
+            progressMap[key] = {
+                seen: parseInt(r.seen),
+                correct: parseInt(r.correct),
+                totalAnswers: parseInt(r.total_answers),
+                sessions: parseInt(r.sessions),
+                lastActive: r.last_active,
+            };
+        });
+
+        const data = usersResult.rows.map((u) => ({
+            id: u.id,
+            username: u.username,
+            name: u.name,
+            role: u.role,
+            subjectAccessMode: u.subject_access_mode,
+            subjects: subjectsResult.rows.map((s) => {
+                const key = `${u.id}_${s.id}`;
+                const p = progressMap[key];
+                const total = questionCounts[s.id] || 0;
+                return {
+                    subjectId: s.id,
+                    subjectName: s.name,
+                    totalQuestions: total,
+                    seen: p ? p.seen : 0,
+                    correct: p ? p.correct : 0,
+                    totalAnswers: p ? p.totalAnswers : 0,
+                    sessions: p ? p.sessions : 0,
+                    lastActive: p ? p.lastActive : null,
+                    completion: total > 0 ? Math.round((p ? p.seen : 0) / total * 100) : 0,
+                    accuracy: p && p.totalAnswers > 0 ? Math.round(p.correct / p.totalAnswers * 100) : 0,
+                };
+            }),
+        }));
+
+        res.json({ users: data, subjects: subjectsResult.rows });
+    } catch (err) {
+        console.error("Admin progress error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/users/:id/progress", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userResult = await pool.query("SELECT id, username, name FROM users WHERE id = $1", [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const result = await pool.query(
+            `SELECT
+                s.id AS subject_id,
+                s.name AS subject_name,
+                COUNT(DISTINCT q.id) AS total_questions,
+                COUNT(DISTINCT qa.question_id) AS seen,
+                SUM(CASE WHEN qa.is_correct THEN 1 ELSE 0 END) AS correct,
+                COUNT(qa.id) AS total_answers,
+                COUNT(DISTINCT qs.id) AS sessions,
+                MAX(qs.completed_at) AS last_active
+            FROM subjects s
+            LEFT JOIN questions q ON q.subject_id = s.id
+            LEFT JOIN quiz_sessions qs ON qs.subject_id = s.id AND qs.user_id = $1 AND qs.completed_at IS NOT NULL
+            LEFT JOIN quiz_answers qa ON qa.session_id = qs.id
+            GROUP BY s.id, s.name
+            ORDER BY s.name`,
+            [id]
+        );
+
+        res.json({
+            user: userResult.rows[0],
+            subjects: result.rows.map((r) => ({
+                subjectId: r.subject_id,
+                subjectName: r.subject_name,
+                totalQuestions: parseInt(r.total_questions),
+                seen: parseInt(r.seen),
+                correct: parseInt(r.correct),
+                totalAnswers: parseInt(r.total_answers),
+                sessions: parseInt(r.sessions),
+                lastActive: r.last_active,
+                completion: parseInt(r.total_questions) > 0 ? Math.round(parseInt(r.seen) / parseInt(r.total_questions) * 100) : 0,
+                accuracy: parseInt(r.total_answers) > 0 ? Math.round(parseInt(r.correct) / parseInt(r.total_answers) * 100) : 0,
+            })),
+        });
+    } catch (err) {
+        console.error("User progress error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.get("/users/:id/subjects", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userResult = await pool.query(
+            "SELECT id, username, name, subject_access_mode FROM users WHERE id = $1", [id]
+        );
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const allSubjects = await pool.query("SELECT id, name FROM subjects ORDER BY name");
+        const granted = await pool.query(
+            "SELECT subject_id FROM subject_access WHERE user_id = $1", [id]
+        );
+        const grantedIds = granted.rows.map((r) => r.subject_id);
+
+        res.json({
+            user: userResult.rows[0],
+            accessMode: userResult.rows[0].subject_access_mode,
+            subjects: allSubjects.rows,
+            grantedSubjectIds: grantedIds,
+        });
+    } catch (err) {
+        console.error("Get user subjects error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+router.put("/users/:id/subjects", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { accessMode, subjectIds } = req.body;
+
+        if (!['all', 'restricted'].includes(accessMode)) {
+            return res.status(400).json({ error: "accessMode must be 'all' or 'restricted'" });
+        }
+
+        await pool.query("UPDATE users SET subject_access_mode = $1 WHERE id = $2", [accessMode, id]);
+
+        await pool.query("DELETE FROM subject_access WHERE user_id = $1", [id]);
+
+        if (accessMode === 'restricted' && Array.isArray(subjectIds) && subjectIds.length > 0) {
+            const values = subjectIds.map((sid, i) => `($1, $${i + 2}, $${subjectIds.length + 2})`).join(", ");
+            await pool.query(
+                `INSERT INTO subject_access (user_id, subject_id, granted_by) VALUES ${values} ON CONFLICT (user_id, subject_id) DO NOTHING`,
+                [id, ...subjectIds, req.user.id]
+            );
+        }
+
+        res.json({ accessMode, subjectIds: accessMode === 'restricted' ? subjectIds : [] });
+    } catch (err) {
+        console.error("Update user subjects error:", err);
         res.status(500).json({ error: "Server error" });
     }
 });

@@ -21,11 +21,23 @@ export default function AdminPage() {
     const [userFilter, setUserFilter] = useState("all");
     const [createUserModal, setCreateUserModal] = useState(false);
     const [createForm, setCreateForm] = useState({ username: "", password: "", name: "", role: "user" });
+    const [progressData, setProgressData] = useState(null);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const [accessModal, setAccessModal] = useState(null);
+    const [accessMode, setAccessMode] = useState("all");
+    const [accessSubjects, setAccessSubjects] = useState([]);
+    const [accessSaving, setAccessSaving] = useState(false);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (activeTab === "progress" && !progressData) {
+            fetchProgress();
+        }
+    }, [activeTab]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -205,6 +217,57 @@ export default function AdminPage() {
         }
     };
 
+    const fetchProgress = async () => {
+        setProgressLoading(true);
+        try {
+            const res = await api.get("/admin/progress");
+            setProgressData(res.data);
+        } catch (err) {
+            console.error("Fetch progress error:", err);
+        } finally {
+            setProgressLoading(false);
+        }
+    };
+
+    const handleOpenAccessModal = async (userId) => {
+        try {
+            const res = await api.get(`/admin/users/${userId}/subjects`);
+            setAccessModal(res.data);
+            setAccessMode(res.data.accessMode);
+            setAccessSubjects(res.data.grantedSubjectIds);
+        } catch (err) {
+            console.error("Fetch access error:", err);
+            alert("Failed to load subject access");
+        }
+    };
+
+    const handleSaveAccess = async () => {
+        if (!accessModal) return;
+        setAccessSaving(true);
+        try {
+            await api.put(`/admin/users/${accessModal.user.id}/subjects`, { accessMode, subjectIds: accessSubjects });
+            setUsers((prev) => prev.map((u) => u.id === accessModal.user.id ? { ...u, subject_access_mode: accessMode } : u));
+            setAccessModal(null);
+        } catch (err) {
+            console.error("Save access error:", err);
+            alert(err.response?.data?.error || "Failed to update access");
+        } finally {
+            setAccessSaving(false);
+        }
+    };
+
+    const toggleAccessSubject = (subjectId) => {
+        setAccessSubjects((prev) => prev.includes(subjectId) ? prev.filter((id) => id !== subjectId) : [...prev, subjectId]);
+    };
+
+    const getProgressColor = (pct) => {
+        if (pct === 0) return "none";
+        if (pct <= 25) return "low";
+        if (pct <= 50) return "mid";
+        if (pct <= 75) return "good";
+        return "high";
+    };
+
     const getFilteredUsers = () => {
         switch (userFilter) {
             case "pending": return users.filter((u) => !u.approved);
@@ -221,6 +284,7 @@ export default function AdminPage() {
     const tabs = [
         { id: "stats", icon: "bar_chart", label: "Overview" },
         { id: "users", icon: "group", label: "Users" },
+        { id: "progress", icon: "leaderboard", label: "Progress" },
         { id: "subjects", icon: "library_books", label: "Subjects" },
         { id: "upload", icon: "upload_file", label: "Upload" },
     ];
@@ -367,6 +431,9 @@ export default function AdminPage() {
                                                 <button className="action-btn" onClick={() => setResetModal(u)} title="Reset Password">
                                                     <span className="material-icons-outlined">key</span>
                                                 </button>
+                                                <button className="action-btn" onClick={() => handleOpenAccessModal(u.id)} title="Manage Subject Access">
+                                                    <span className="material-icons-outlined">tune</span>
+                                                </button>
                                                 {u.id !== user.id && (
                                                     <button className="action-btn danger" onClick={() => handleDeleteUser(u.id)} title="Delete">
                                                         <span className="material-icons-outlined">delete</span>
@@ -417,6 +484,56 @@ export default function AdminPage() {
                                 {uploadStatus.message}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === "progress" && (
+                    <div className="progress-section fade-in">
+                        <div className="progress-toolbar">
+                            <h2 className="section-title">User Progress</h2>
+                            <button className="action-btn" onClick={() => { setProgressData(null); fetchProgress(); }} title="Refresh">
+                                <span className="material-icons-outlined">refresh</span>
+                            </button>
+                        </div>
+                        {progressLoading ? (
+                            <div className="empty-text">Loading progress data...</div>
+                        ) : progressData && progressData.subjects.length > 0 ? (
+                            <div className="progress-table-container">
+                                <table className="progress-table">
+                                    <thead>
+                                        <tr>
+                                            <th className="sticky-col">User</th>
+                                            {progressData.subjects.map((s) => (
+                                                <th key={s.id} className="subject-col">{s.name}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {progressData.users.map((u) => (
+                                            <tr key={u.id}>
+                                                <td className="sticky-col user-cell">
+                                                    <div className="progress-user-name">{u.name}</div>
+                                                    <div className="progress-user-meta">{u.username}</div>
+                                                </td>
+                                                {u.subjects.map((s) => (
+                                                    <td key={s.subjectId} className="progress-cell" title={`${s.seen}/${s.totalQuestions} seen | ${s.accuracy}% accuracy | ${s.sessions} sessions${s.lastActive ? ' | Last: ' + new Date(s.lastActive).toLocaleDateString() : ''}`}>
+                                                        <div className={`progress-chip ${getProgressColor(s.completion)}`}>
+                                                            {s.completion}%
+                                                        </div>
+                                                        <div className="mini-bar">
+                                                            <div className="mini-bar-fill" style={{ width: `${s.completion}%` }} />
+                                                        </div>
+                                                        <div className="progress-detail">{s.seen}/{s.totalQuestions}</div>
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : progressData ? (
+                            <p className="empty-text">No subjects or users found.</p>
+                        ) : null}
                     </div>
                 )}
             </div>
@@ -516,6 +633,48 @@ export default function AdminPage() {
                                 disabled={!createForm.username || !createForm.password || !createForm.name || createForm.password.length < 6}
                             >
                                 Create
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {accessModal && (
+                <div className="modal-overlay" onClick={() => setAccessModal(null)}>
+                    <div className="modal scale-in" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px" }}>
+                        <h2 className="modal-title">
+                            <span className="material-icons-outlined modal-title-icon">tune</span>
+                            Subject Access
+                        </h2>
+                        <p style={{ marginBottom: "0.75rem", color: "var(--md-on-surface-variant)" }}>Managing access for <strong>{accessModal.user.name}</strong></p>
+                        <div style={{ marginBottom: "1rem" }}>
+                            <div className="timer-mode-selector">
+                                <button className={`timer-mode-btn ${accessMode === "all" ? "active" : ""}`} onClick={() => setAccessMode("all")}>
+                                    <span className="material-icons-outlined" style={{ fontSize: "18px" }}>lock_open</span>
+                                    Full Access
+                                </button>
+                                <button className={`timer-mode-btn ${accessMode === "restricted" ? "active" : ""}`} onClick={() => setAccessMode("restricted")}>
+                                    <span className="material-icons-outlined" style={{ fontSize: "18px" }}>lock</span>
+                                    Restricted
+                                </button>
+                            </div>
+                        </div>
+                        {accessMode === "restricted" && (
+                            <div className="access-subjects-list fade-in">
+                                <p style={{ fontSize: "0.8rem", color: "var(--md-on-surface-variant)", marginBottom: "0.75rem" }}>Select which subjects this user can access:</p>
+                                {accessModal.subjects.map((s) => (
+                                    <label key={s.id} className="access-subject-item">
+                                        <input type="checkbox" checked={accessSubjects.includes(s.id)} onChange={() => toggleAccessSubject(s.id)} />
+                                        <span>{s.name}</span>
+                                    </label>
+                                ))}
+                                {accessModal.subjects.length === 0 && <p className="empty-text">No subjects available</p>}
+                            </div>
+                        )}
+                        <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
+                            <button className="modal-btn cancel" onClick={() => setAccessModal(null)}>Cancel</button>
+                            <button className="modal-btn start" onClick={handleSaveAccess} disabled={accessSaving || (accessMode === "restricted" && accessSubjects.length === 0)}>
+                                {accessSaving ? "Saving..." : "Save"}
                             </button>
                         </div>
                     </div>

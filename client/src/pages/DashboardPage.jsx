@@ -67,7 +67,13 @@ export default function DashboardPage() {
             const res = await api.post(endpoint, payload);
             navigate(`/quiz/${quizSetup.id}`, { state: { ...res.data, showFeedback } });
         } catch (err) {
-            alert(err.response?.data?.error || "Failed to start quiz");
+            if (err.response?.data?.code === "SUBJECT_RESTRICTED") {
+                alert("You don't have access to this subject. Contact your admin.");
+                setQuizSetup(null);
+                fetchSubjects();
+            } else {
+                alert(err.response?.data?.error || "Failed to start quiz");
+            }
         }
     };
 
