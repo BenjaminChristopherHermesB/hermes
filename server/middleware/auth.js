@@ -32,7 +32,12 @@ async function auth(req, res, next) {
         if (err.name === "TokenExpiredError") {
             return res.status(401).json({ error: "Token expired", code: "TOKEN_EXPIRED" });
         }
-        return res.status(401).json({ error: "Invalid token" });
+        if (err.name === "JsonWebTokenError" || err.name === "NotBeforeError") {
+            return res.status(401).json({ error: "Invalid token" });
+        }
+        
+        console.error("Auth middleware error:", err);
+        return res.status(500).json({ error: "Internal server error during authentication" });
     }
 }
 
